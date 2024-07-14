@@ -15,31 +15,58 @@ import matplotlib.pyplot as plt
 # Implement the methods in this class as appropriate. Feel free to add other methods
 # and attributes as needed. You may/should reuse code from previous HWs when applicable.
 class UndirectedGraph:
-    def __init__(self,number_of_nodes):
-        '''Assume that nodes are represented by indices/integers between 0 and number_of_nodes - 1.'''
-        # TODO: Implement this method
-        pass
+    def __init__(self, number_of_nodes):
+        """
+        Initialize the graph with the specified number of nodes. Each node is identified by an integer index.
+        Uses an adjacency matrix for storage where each cell (i, j) indicates the presence of an edge between nodes i and j.
+        Args:
+            number_of_nodes (int): The total number of nodes in the graph. Nodes are numbered from 0 to number_of_nodes - 1.
+        """
+        self.num_nodes = number_of_nodes
+        self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
     
     def add_edge(self, nodeA, nodeB):
-        ''' Adds an undirected edge to the graph, between nodeA and nodeB. Order of arguments should not matter'''
-        # TODO: Implement this method
-        pass
+        """
+        Add an undirected edge to the graph between nodeA and nodeB.
+        Args:
+            nodeA (int): Index of the first node.
+            nodeB (int): Index of the second node.
+        """
+        self.adj_matrix[nodeA][nodeB] = 1
+        self.adj_matrix[nodeB][nodeA] = 1
     
     def edges_from(self, nodeA):
-        ''' This method shold return a list of all the nodes nodeB such that nodeA and nodeB are 
-        connected by an edge'''
-        # TODO: Implement this method
-        pass
+        """
+        Return a list of all nodes connected to nodeA by an edge.
+        Args:
+            nodeA (int): Index of the node to retrieve edges from.
+        Returns:
+            list[int]: List of nodes that have an edge with nodeA.
+        """
+        return list(np.where(self.adj_matrix[nodeA] == 1)[0])
     
     def check_edge(self, nodeA, nodeB):
-        ''' This method should return true is there is an edge between nodeA and nodeB, and false otherwise'''
-        # TODO: Implement this method
-        pass
+        """
+        Check if there is an edge between nodeA and nodeB.
+        Args:
+            nodeA (int): Index of the first node.
+            nodeB (int): Index of the second node.
+        Returns:
+            bool: True if there is an edge, False otherwise.
+        """
+        return self.adj_matrix[nodeA][nodeB] == 1
     
     def number_of_nodes(self):
-        ''' This method should return the number of nodes in the graph'''
-        # TODO: Implement this method
-        pass
+        """
+        Return the number of nodes in the graph.
+        Returns:
+            int: The number of nodes in the graph.
+        """
+        return self.num_nodes
+    
+    def print_graph(self):
+        print("Adjacency Matrix:")
+        print(self.adj_matrix)
 
 def create_fb_graph(filename = "facebook_combined.txt"):
     ''' This method should return a undirected version of the facebook graph as an instance of the UndirectedGraph class.
