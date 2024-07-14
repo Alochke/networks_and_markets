@@ -16,24 +16,12 @@ from hw2_p9 import UndirectedGraph
 
 # Implement the methods in this class as appropriate. Feel free to add other methods
 # and attributes as needed. You may/should reuse code from previous HWs when applicable.
-class WeightedDirectedGraph:
-    def __init__(self,number_of_nodes):
-        '''Assume that nodes are represented by indices/integers between 0 and number_of_nodes - 1.'''
-        # TODO: Implement this method
-        pass
-    
+class WeightedDirectedGraph(UndirectedGraph):
     def set_edge(self, origin_node, destination_node, weight=1):
         ''' Modifies the weight for the specified directed edge, from origin to destination node,
             with specified weight (an integer >= 0). If weight = 0, effectively removes the edge from 
             the graph. If edge previously wasn't in the graph, adds a new edge with specified weight.'''
-        # TODO: Implement this method
-        pass
-    
-    def edges_from(self, origin_node):
-        ''' This method shold return a list of all the nodes destination_node such that there is
-            a directed edge (origin_node, destination_node) in the graph (i.e. with weight > 0).'''
-        # TODO: Implement this method
-        pass
+        self.adj_matrix[origin_node][destination_node] = weight
     
     def get_edge(self, origin_node, destination_node):
         ''' This method should return the weight (an integer > 0) 
