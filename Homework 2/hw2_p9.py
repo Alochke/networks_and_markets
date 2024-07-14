@@ -43,7 +43,7 @@ class UndirectedGraph:
         Returns:
             list[int]: List of nodes that have an edge with nodeA.
         """
-        return list(np.where(self.adj_matrix[nodeA] == 1)[0])
+        return list(np.where(self.adj_matrix[nodeA]  > 0)[0])
     
     def check_edge(self, nodeA, nodeB):
         """
