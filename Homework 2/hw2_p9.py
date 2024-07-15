@@ -64,23 +64,6 @@ class UndirectedGraph:
         """
         return self.num_nodes
     
-    def deep_copy(self) -> UndirectedGraph:
-        """
-        Creates a deep copy of the current UndirectedGraph instance.
-        
-        This method constructs a new UndirectedGraph object with the same number of nodes as the original graph.
-        It then copies the adjacency matrix from the original graph to the new graph, ensuring that the new graph 
-        is a complete and independent copy of the original.
-        
-        Returns:
-            UndirectedGraph: A new UndirectedGraph instance with the same adjacency matrix as the original graph.
-        """
-        ret = UndirectedGraph(self.num_nodes)
-        for i in range(self.number_of_nodes):
-            for j in range(self.num_nodes):
-                ret.adj_matrix[i][j] = self.adj_matrix[i][j]
-        return ret
-    
     def print_graph(self):
         print("Adjacency Matrix:")
         print(self.adj_matrix)
