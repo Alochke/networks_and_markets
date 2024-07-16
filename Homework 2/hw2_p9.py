@@ -201,9 +201,9 @@ def run_contagion_brd(G, k, t, n_iterations):
     for i in range(n_iterations):
         rng = np.random.default_rng(SEED + i)
         early_adopters = rng.choice(np.arange(FB_GRAPH_SIZE), size=k, replace=False)
-        print_debug(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
+        # print_debug(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
         cur_infected = contagion_brd(G, early_adopters, t)
-        print_debug(f"t={t}, k={k}, iteration {i}: Infected nodes: {cur_infected}")
+        # print_debug(f"t={t}, k={k}, iteration {i}: Infected nodes: {cur_infected}")
         infected.append(len(cur_infected))
     return infected
 
@@ -283,7 +283,7 @@ def main():
             infected = run_contagion_brd(fb_graph, k, t, n_iterations)
             avg_infected = np.mean(infected)
             infection_rates.append((float(t), int(k), float(avg_infected)))
-            print(infection_rates[-1])
+            print_debug(f"{infection_rates[-1]}")
     plot_surface(infection_rates)
     plot_heatmap(infection_rates)
 
