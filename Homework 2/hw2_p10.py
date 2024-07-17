@@ -14,6 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from hw2_p9 import UndirectedGraph
 
+FLOW_INDX = 1
+NUM_SAMPLES = 100
+
 # Implement the methods in this class as appropriate. Feel free to add other methods
 # and attributes as needed. You may/should reuse code from previous HWs when applicable.
 class WeightedDirectedGraph(UndirectedGraph):
@@ -74,6 +77,7 @@ def max_flow(G: WeightedDirectedGraph, s: int, t: int):
         for i in range(size):
             for j in range(i + 1 if triangle else 0, size):
                 func(i, j)
+    # We're dealing with antiparallel edges next.
     def func1(i, j):
         nonlocal extra
         if G.get_edge(i, j) and G.get_edge(j, i) and i != j:
@@ -104,13 +108,17 @@ def max_flow(G: WeightedDirectedGraph, s: int, t: int):
             else:
                 G2_flow_graph.adj_matrix[path[i + 1], path[i]] -= bottleneck
 
+    # Dealing with antiparallel edges once again.
     G_flow_graph = WeightedDirectedGraph(G.num_nodes)
     execute(G.num_nodes, lambda i, j: G_flow_graph.set_edge(i, j, G2_flow_graph.get_edge(i, j)), False)
 
     for key, val in map.items():
         G_flow_graph.set_edge(val[0], val[1], G2_flow_graph.get_edge(val[0], G.num_nodes + key))
+    
+    G_neto_flow_graph = WeightedDirectedGraph(G.num_nodes)
+    execute(G.num_nodes, lambda i, j: G_neto_flow_graph.set_edge(i, j, G_flow_graph.get_edge(i, j) - G_flow_graph.get_edge(j, i)), False)
 
-    return (sum(G_flow_graph.adj_matrix[s]) - sum(G_flow_graph.adj_matrix[:,s]), G_flow_graph)
+    return (sum(G_neto_flow_graph.adj_matrix[s]), G_neto_flow_graph)
 
 # === Problem 10(c) ===
 def max_matching(n, m, C):
@@ -120,20 +128,65 @@ def max_matching(n, m, C):
     If driver i and rider j are incompatible, then C[i][j] = 0. 
     Return an n-element array M where M[i] = j if driver i is matched with rider j,
     and M[i] = None if driver i is not matched.'''
-    # TODO: Implement this method
-    pass
+    G = WeightedDirectedGraph(n + m + 2)
+    for i in range(n):
+        G.set_edge(n + m, i)
+        for j in range(m):
+            if C[i][j]:
+                G.set_edge(i, n + j)
+    for i in range(m):
+        G.set_edge(n + i, m + n + 1)
+    f = max_flow(G, n + m, n + m + 1)[FLOW_INDX]
+    return [int(f.edges_from(i)[0] - n) if f.edges_from(i) else None for i in range(n)]
 
 # === Problem 10(d) ===
 def random_driver_rider_bipartite_graph(n, p):
     '''Returns an n x n constraints array C as defined for max_matching, representing a bipartite
        graph with 2n nodes, where each vertex in the left half is connected to any given vertex in the 
        right half with probability p.'''
-    # TODO: Implement this method
-    pass
+    return np.random.choice([0, 1], (n, n), p=[1 - p, p]).tolist()
+
+# simulation for 10(s)
+def run_simulation(name_of_file: str):
+    """
+    Runs a simulation to estimate the size of the maximum matching in a bipartite graph with varying edge connection probabilities,
+    and plots the results and saves the plot to a file with the specified `name_of_file`.
+
+    Parameters:
+    -----------
+    name_of_file (str): The name of the file to save the plot.
+    """
+    ps = np.arange(0.01, 1.01, 0.01)
+    matching_sizes = []
+
+    for p in ps:
+        estim = sum([1 if i != None else 0 for i in max_matching(NUM_SAMPLES, NUM_SAMPLES, random_driver_rider_bipartite_graph(NUM_SAMPLES, p))]) / NUM_SAMPLES
+        matching_sizes.append(estim)
+        print(f"p = {p:.2f}, Estimation is: {estim}")
+
+    # Plotting the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(ps, matching_sizes, marker='o', linestyle='-', color='b')
+    plt.title('Estimation vs. Probability Of Connection')
+    plt.xlabel('Probability p')
+    plt.ylabel('Estimation')
+    plt.grid(True)
+    plt.savefig(name_of_file)
 
 def main():
-    # TODO: Put your analysis and plotting code here for 10(d)
-    pass
+    print("Test for question 10(c)\n")
+    print("Example 1:")
+    ex1 = np.array([[0, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 0, 0, 0, 0], [0, 0, 1, 0, 1], [0, 0, 1, 1, 0]])
+    print(ex1, end = "\n")
+    print("Result for example 1:")
+    print(max_matching(len(ex1[:][0]), len(ex1[0][:]), ex1), end = "\n\n")
+    print("Example 2:")
+    ex2 = np.array([[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1]])
+    print(ex2, end = "\n")
+    print("Result for example 2:")
+    print(max_matching(len(ex2[:][0]), len(ex2[0][:]), ex2), end = "\n\n")
+    print("Computation for question 10(d)\n")
+    run_simulation("q10(d)")
 
 if __name__ == "__main__":
     main()
