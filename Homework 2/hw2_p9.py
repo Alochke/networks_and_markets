@@ -38,7 +38,7 @@ class UndirectedGraph:
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
         self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
-        self.neighbors = [None] * number_of_nodes
+        self.neighbors = [[] for _ in range(number_of_nodes)]
     
     def add_edge(self, nodeA, nodeB):
         """
@@ -95,7 +95,8 @@ class UndirectedGraph:
         print(self.adj_matrix)
 
     def finalize_neighbors(self):
-        self.neighbors = [self.edges_from(v) for v in range(self.num_nodes)]
+        for v in range(self.num_nodes):
+            self.neighbors[v] = self.edges_from(v)
         self.final = True
 
 def create_fb_graph(filename = "facebook_combined.txt"):
@@ -112,6 +113,9 @@ def create_fb_graph(filename = "facebook_combined.txt"):
         exit()
 
     res.finalize_neighbors()   # avoid recalculating neighbors
+    # print(f"create_fb_graph: num_nodes = {res.num_nodes}")
+    # for v in range(res.num_nodes):
+    #     print(f"v {v}: ", res.outcome[res.edges_from(v)])
     return res
 
 
@@ -179,6 +183,7 @@ def contagion_brd(G, S, t):
         print(f"error during contagion_brd: {e}")
         traceback.print_exc()
         traceback.print_exception(e)
+        print(traceback.format_exc())
         print("S: ", S)
         exit()
 
@@ -231,10 +236,11 @@ def run_contagion_brd(G, k, t, n_iterations):
     for i in range(n_iterations):
         try:
             early_adopters = rng.choice(np.arange(FB_GRAPH_SIZE), size=k, replace=False)
-            # print_debug(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
+            # print(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
             cur_infected = contagion_brd(G, early_adopters, t)
-            # print_debug(f"t={t}, k={k}, iteration {i}: Infected nodes: {cur_infected}")
+            # print(f"t={t}, k={k}, iteration {i}: Infected nodes: {cur_infected}")
             infected.append(len(cur_infected))
+            # print(f"t={t}, k={k}, iteration {i}: infected: {infected}")
         except Exception as e:
             print(f"error during run_contagion_brd iteration {i}: {e}")
             traceback.print_exc()
@@ -341,4 +347,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"error: {e}")
         print(traceback.format_exc())
+        traceback.print_exc()
+        traceback.print_exception(e)
+
 
