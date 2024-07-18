@@ -16,7 +16,6 @@ import os
 import traceback
 
 FB_GRAPH_SIZE = 4039
-FB_GRAPH_NUM_PAIRS = (FB_GRAPH_SIZE * (FB_GRAPH_SIZE - 1)) / 2
 SEED = 42
 DEBUG = False
 
@@ -113,9 +112,6 @@ def create_fb_graph(filename = "facebook_combined.txt"):
         exit()
 
     res.finalize_neighbors()   # avoid recalculating neighbors
-    # print(f"create_fb_graph: num_nodes = {res.num_nodes}")
-    # for v in range(res.num_nodes):
-    #     print(f"v {v}: ", res.outcome[res.edges_from(v)])
     return res
 
 
@@ -139,17 +135,17 @@ def contagion_brd(G, S, t):
         # only nodes not in S can be in candidates
         for v in candidates:
             try:
-                neighbors = G.edges_from(v)
-                if not neighbors:
+                cur_neighbors = G.edges_from(v)
+                if not cur_neighbors:
                     continue
-                neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
-                if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
+                neighbors_X = np.sum(G.outcome[cur_neighbors])  # X = 1, Y = 0
+                if should_defect(G.outcome[v], neighbors_X / len(cur_neighbors)):
                     return v
             except Exception as e:
                 print(f"error during contagion_brd: {e}")
                 traceback.print_exc()
                 print("v: ", v)
-                print("v neighbors: ", neighbors)
+                print("v neighbors: ", cur_neighbors)
                 exit()
         return None     # no defectors found
 
