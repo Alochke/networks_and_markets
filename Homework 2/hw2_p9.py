@@ -129,6 +129,9 @@ def contagion_brd(G, S, t):
                     return v
         return None     # no defectors found
 
+    if len(S) == 0:  # no early adopters
+        return []
+
     # permanently infect adopters in S with X
     G.outcome[S] = X
 
