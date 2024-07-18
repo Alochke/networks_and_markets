@@ -138,7 +138,10 @@ def contagion_brd(G, S, t):
                 cur_neighbors = G.edges_from(v)
                 if len(cur_neighbors) == 0:
                     continue
-                neighbors_X = np.sum([1 for u in cur_neighbors if G.outcome[u] == X])  # X = 1, Y = 0
+                neighbors_X = 0
+                for u in cur_neighbors:
+                    if G.outcome[u] == X:
+                        neighbors_X += 1        # X = 1, Y = 0
                 if should_defect(G.outcome[v], neighbors_X / len(cur_neighbors)):
                     return v
             except Exception as e:
