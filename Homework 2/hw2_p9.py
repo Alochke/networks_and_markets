@@ -62,7 +62,7 @@ class UndirectedGraph:
             return list(np.where(self.adj_matrix[int(nodeA)] > 0)[0])
         else:
             try:
-                return self.neighbors[nodeA]
+                return self.neighbors[int(nodeA)]
             except Exception as e:
                 print(f"error during edges_from: {e}")
                 traceback.print_exc()
@@ -180,10 +180,9 @@ def contagion_brd(G, S, t):
             cur_candidates.update(get_candidates(defector_neighbors))
 
         # return a list of all nodes infected with X after BRD converges.
-        return list(np.where(G.outcome == X)[0])
-        # TODO:
-        # # convert np.int64 to standard python int for submission
-        # return [int(v) for v in np.where(G.outcome == X)[0]]
+        # return list(np.where(G.outcome == X)[0])
+        # convert np.int64 to standard python int for submission
+        return [int(v) for v in np.where(G.outcome == X)[0]]
 
     except Exception as e:
         print(f"error during contagion_brd: {e}")
@@ -220,7 +219,7 @@ def test_contagion_brd():
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
-    return 1/2
+    return 0.25      # threshold = 1/2
 
 def q_incompletecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 does not cascade completely.'''
@@ -228,7 +227,7 @@ def q_incompletecascade_graph_fig4_1_left():
 
 def q_completecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 cascades completely.'''
-    return 1/3
+    return 0.3      # threshold = 1/3
 
 def q_incompletecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 does not cascade completely.'''
@@ -257,7 +256,7 @@ def run_contagion_brd(G, k, t, n_iterations):
     return infected
 
 # plots for 9c
-def plot_surface(infection_rates):
+def plot_surface(infection_rates, z_label, title):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
@@ -276,12 +275,13 @@ def plot_surface(infection_rates):
 
     ax.set_xlabel('Threshold t')
     ax.set_ylabel('Number of Early Adopters k')
-    ax.set_zlabel('Average Infected')
+    ax.set_zlabel(z_label)
 
     fig.colorbar(surf)
+    plt.title(title)
     plt.show()
 
-def plot_heatmap(infection_rates):
+def plot_heatmap(infection_rates, title):
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
 
@@ -296,7 +296,7 @@ def plot_heatmap(infection_rates):
     sns.heatmap(Z, xticklabels=t_values, yticklabels=k_values, cmap='viridis', annot=True, fmt=".1f")
     plt.xlabel('Threshold t')
     plt.ylabel('Number of Early Adopters k')
-    plt.title('Average Infected Nodes')
+    plt.title(title)
     plt.show()
 
 
@@ -314,17 +314,19 @@ def main():
     infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
     print("nodes infected on average: ", np.mean(infected))
     print("variance of infected nodes: ", np.var(infected))
+    print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
 
     # === Problem 9(c) === #
     print("\n === Problem 9(c) === ")
     infection_rates = []
+    cascades = []
     if not DEBUG:
         t_values = np.arange(0, 0.55, 0.05)
         k_values = np.arange(0, 251, 10)
         n_iterations = 10
     else:
         t_values = np.arange(0, 0.55, 0.05)
-        k_values = np.arange(0, 151, 10)
+        k_values = np.arange(0, 41, 10)
         n_iterations = 1
 
     for t in t_values:
@@ -333,12 +335,19 @@ def main():
                 infected = run_contagion_brd(fb_graph, k, t, n_iterations)
                 avg_infected = np.mean(infected)
                 infection_rates.append((float(t), int(k), float(avg_infected)))
+                cascades.append((float(t), int(k), float(np.sum(np.array(infected) == fb_graph.number_of_nodes()))))
                 print_debug(f"{infection_rates[-1]}")
             except Exception as e:
                 print(f"Error during main loop for t={t}, k={k}: {e}")
                 traceback.print_exc()
-    plot_surface(infection_rates)
-    plot_heatmap(infection_rates)
+
+    # plot infections
+    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes')
+    plot_heatmap(infection_rates, 'Average Infected Heatmap')
+
+    # plot cascades
+    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades')
+    plot_heatmap(cascades, 'Number of Cascades Heatmap')
 
     # === OPTIONAL: Bonus Question 2 === #
     # TODO: Put analysis code here
