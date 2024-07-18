@@ -8,7 +8,7 @@
 
 # Do not include any other files or an external package, unless it is one of
 # [numpy, pandas, scipy, matplotlib, random]
-# please contact us before sumission if you want another package approved.
+# please contact us before submission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -16,7 +16,7 @@ import seaborn as sns
 FB_GRAPH_SIZE = 4039
 FB_GRAPH_NUM_PAIRS = (FB_GRAPH_SIZE * (FB_GRAPH_SIZE - 1)) / 2
 SEED = 42
-DEBUG = True    # TODO: False
+DEBUG = False
 
 # player actions
 X = 1
@@ -36,7 +36,8 @@ class UndirectedGraph:
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
         self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
-    
+        self.neighbors = [[] for _ in range(number_of_nodes)]
+
     def add_edge(self, nodeA, nodeB):
         """
         Add an undirected edge to the graph between nodeA and nodeB.
@@ -56,9 +57,9 @@ class UndirectedGraph:
             list[int]: List of nodes that have an edge with nodeA.
         """
         if not self.final:
-            return list(np.where(self.adj_matrix[nodeA] > 0)[0])
+            return list(np.where(self.adj_matrix[int(nodeA)] > 0)[0])
         else:
-            return self.neighbors[nodeA]
+            return self.neighbors[int(nodeA)]
     
     def check_edge(self, nodeA, nodeB):
         """
@@ -84,7 +85,8 @@ class UndirectedGraph:
         print(self.adj_matrix)
 
     def finalize_neighbors(self):
-        self.neighbors = [self.edges_from(v) for v in range(self.num_nodes)]
+        for v in range(self.num_nodes):
+            self.neighbors[v] = self.edges_from(v)
         self.final = True
 
 def create_fb_graph(filename = "facebook_combined.txt"):
@@ -115,6 +117,7 @@ def contagion_brd(G, S, t):
        Return a list of all nodes infected with X after BRD converges.'''
     def should_defect(action, p):
         return (action == Y and p >= t) or (action == X and p < t)
+
     def get_defector():
         for v in range(G.num_nodes):
             if v not in S:
@@ -125,19 +128,6 @@ def contagion_brd(G, S, t):
                 if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
                     return v
         return None     # no defectors found
-
-    def get_random_defector():
-        rng = np.random.default_rng(SEED)
-        shuffled_nodes = rng.permutation(G.num_nodes)
-        for v in shuffled_nodes:
-            if v not in S:
-                neighbors = G.edges_from(v)
-                if not neighbors:
-                    continue
-                neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
-                if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
-                    return v
-        return None
 
     # permanently infect adopters in S with X
     G.outcome[S] = X
@@ -160,7 +150,9 @@ def test_contagion_brd():
     graph_fig4_1_left.add_edge(0,1)
     graph_fig4_1_left.add_edge(1, 2)
     graph_fig4_1_left.add_edge(2, 3)
-    print(contagion_brd(graph_fig4_1_left, [0, 1], 0.5))
+    print("\n === fig4_1_left === ")
+    for t in np.arange(0, 0.75, 0.05):
+        print(f"t={t:.2f}: ", contagion_brd(graph_fig4_1_left, [0, 1], t))
 
     #       2   4   6
     #       |   |   |
@@ -172,11 +164,13 @@ def test_contagion_brd():
     graph_fig4_1_right.add_edge(3, 4)
     graph_fig4_1_right.add_edge(3, 5)
     graph_fig4_1_right.add_edge(5, 6)
-    print(contagion_brd(graph_fig4_1_right, [0, 1, 2], 1/3))
+    print("\n === fig4_1_right === ")
+    for t in np.arange(0, 0.75, 0.05):
+        print(f"t={t:.2f}: ", contagion_brd(graph_fig4_1_right, [0, 1, 2], t))
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
-    return 1/2
+    return 0.25      # threshold = 1/2
 
 def q_incompletecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 does not cascade completely.'''
@@ -184,7 +178,7 @@ def q_incompletecascade_graph_fig4_1_left():
 
 def q_completecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 cascades completely.'''
-    return 1/3
+    return 0.3      # threshold = 1/3
 
 def q_incompletecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 does not cascade completely.'''
@@ -198,8 +192,8 @@ def run_contagion_brd(G, k, t, n_iterations):
     '''k is the number of early adopters
        n_iterations is the number of runs'''
     infected = []
+    rng = np.random.default_rng(SEED)
     for i in range(n_iterations):
-        rng = np.random.default_rng(SEED + i)
         early_adopters = rng.choice(np.arange(FB_GRAPH_SIZE), size=k, replace=False)
         # print_debug(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
         cur_infected = contagion_brd(G, early_adopters, t)
