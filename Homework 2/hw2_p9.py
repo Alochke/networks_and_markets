@@ -252,7 +252,7 @@ def run_contagion_brd(G, k, t, n_iterations):
     return infected
 
 # plots for 9c
-def plot_surface(infection_rates, z_label, title):
+def plot_surface(infection_rates, z_label, title, filename):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
@@ -275,9 +275,10 @@ def plot_surface(infection_rates, z_label, title):
 
     fig.colorbar(surf)
     plt.title(title)
+    plt.savefig(filename)
     plt.show()
 
-def plot_heatmap(infection_rates, title):
+def plot_heatmap(infection_rates, title, filename):
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
 
@@ -293,8 +294,8 @@ def plot_heatmap(infection_rates, title):
     plt.xlabel('Threshold t')
     plt.ylabel('Number of Early Adopters k')
     plt.title(title)
+    plt.savefig(filename)
     plt.show()
-
 
 def main():
     # === Problem 9(a) === #
@@ -309,7 +310,7 @@ def main():
         n_iterations = 1
     infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
     print("nodes infected on average: ", np.mean(infected))
-    print("variance of infected nodes: ", np.var(infected))
+    print("standard deviation of infected nodes: ", np.std(infected))
     print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
 
     # === Problem 9(c) === #
@@ -338,12 +339,12 @@ def main():
                 traceback.print_exc()
 
     # plot infections
-    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes')
-    plot_heatmap(infection_rates, 'Average Infected Heatmap')
+    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes', 'average_infected_surface.png')
+    plot_heatmap(infection_rates, 'Average Infected Heatmap', 'average_infected_heatmap.png')
 
     # plot cascades
-    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades')
-    plot_heatmap(cascades, 'Number of Cascades Heatmap')
+    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades', 'number_of_cascades_surface.png')
+    plot_heatmap(cascades, 'Number of Cascades Heatmap', 'number_of_cascades_heatmap.png')
 
     # === OPTIONAL: Bonus Question 2 === #
     # TODO: Put analysis code here
