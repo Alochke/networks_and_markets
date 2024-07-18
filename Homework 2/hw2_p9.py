@@ -50,7 +50,7 @@ class UndirectedGraph:
         self.adj_matrix[nodeA][nodeB] = 1
         self.adj_matrix[nodeB][nodeA] = 1
     
-    def edges_from(self, nodeA):
+    def edges_from(self, nodeA: int):
         """
         Return a list of all nodes connected to nodeA by an edge.
         Args:
@@ -59,7 +59,7 @@ class UndirectedGraph:
             list[int]: List of nodes that have an edge with nodeA.
         """
         if not self.final:
-            return list(np.where(self.adj_matrix[nodeA] > 0)[0])
+            return list(np.where(self.adj_matrix[int(nodeA)] > 0)[0])
         else:
             try:
                 return self.neighbors[nodeA]
@@ -68,7 +68,7 @@ class UndirectedGraph:
                 traceback.print_exc()
                 print("nodeA type: ", type(nodeA))
                 print("node: ", nodeA)
-                print("node neighbors: ", list(np.where(self.adj_matrix[nodeA] > 0)[0]))
+                print("node neighbors: ", list(np.where(self.adj_matrix[int(nodeA)] > 0)[0]))
                 exit()
     
     def check_edge(self, nodeA, nodeB):
@@ -131,38 +131,32 @@ def contagion_brd(G, S, t):
     def should_defect(action, p):
         return (action == Y and p >= t) or (action == X and p < t)
 
-    def get_defector():
-        for v in range(G.num_nodes):
-            if v not in S:
-                try:
-                    neighbors = G.edges_from(v)
-                    if not neighbors:
-                        continue
-                    neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
-                    if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
-                        return v
-                except Exception as e:
-                    print(f"error during contagion_brd: {e}")
-                    traceback.print_exc()
-                    print("v: ", v)
-                    print("v neighbors: ", neighbors)
-                    exit()
-        return None     # no defectors found
+    def get_candidates(neighbors):
+        # get all neighbors with action Y that are not in S
+        return neighbors[(G.outcome[neighbors] == Y) & np.isin(neighbors, S, invert=True)]
 
-    def get_random_defector():
-        rng = np.random.default_rng(SEED)
-        shuffled_nodes = rng.permutation(G.num_nodes)
-        for v in shuffled_nodes:
-            if v not in S:
+    def get_defector(candidates):
+        # only nodes not in S can be in candidates
+        for v in candidates:
+            try:
                 neighbors = G.edges_from(v)
                 if not neighbors:
                     continue
                 neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
                 if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
                     return v
-        return None
+            except Exception as e:
+                print(f"error during contagion_brd: {e}")
+                traceback.print_exc()
+                print("v: ", v)
+                print("v neighbors: ", neighbors)
+                exit()
+        return None     # no defectors found
 
     try:
+        if len(S) == 0:     # no early adopters
+            return []
+
         # permanently infect adopters in S with X
         G.outcome[S] = X
 
@@ -170,8 +164,20 @@ def contagion_brd(G, S, t):
         G.outcome[np.setdiff1d(np.arange(G.num_nodes), S)] = Y
 
         # run BRD on the set of nodes not in S
-        while defector := get_defector():
+        # in this game if a node switches from Y to X, it will never switch back.
+        # therefore it's sufficient to start by inspecting neighbors of S with action Y
+        # for each node that switched to Y, add its neighbors with action Y to the candidates set
+        # finish when none of the candidates want to switch.
+        # general BRD alg. was too slow on fb dataset. this version is equivalent for this game.
+        all_neighbors_S = np.concatenate([G.edges_from(v) for v in S])
+        # get all neighbors of nodes in S that are not in S with action Y
+        cur_candidates = set(get_candidates(all_neighbors_S))
+        while defector := get_defector(cur_candidates):
             G.outcome[defector] = 1 - G.outcome[defector]
+            cur_candidates.discard(defector)
+            defector_neighbors = np.array(G.edges_from(defector))
+            # if a node switches to X, its neighbors can be affected
+            cur_candidates.update(get_candidates(defector_neighbors))
 
         # return a list of all nodes infected with X after BRD converges.
         return list(np.where(G.outcome == X)[0])
@@ -194,7 +200,9 @@ def test_contagion_brd():
     graph_fig4_1_left.add_edge(0,1)
     graph_fig4_1_left.add_edge(1, 2)
     graph_fig4_1_left.add_edge(2, 3)
-    print(contagion_brd(graph_fig4_1_left, [0, 1], 0.5))
+    print("\n === fig4_1_left === ")
+    for t in np.arange(0, 0.75, 0.05):
+        print(f"t={t:.2f}: ", contagion_brd(graph_fig4_1_left, [0, 1], t))
 
     #       2   4   6
     #       |   |   |
@@ -206,7 +214,9 @@ def test_contagion_brd():
     graph_fig4_1_right.add_edge(3, 4)
     graph_fig4_1_right.add_edge(3, 5)
     graph_fig4_1_right.add_edge(5, 6)
-    print(contagion_brd(graph_fig4_1_right, [0, 1, 2], 1/3))
+    print("\n === fig4_1_right === ")
+    for t in np.arange(0, 0.75, 0.05):
+        print(f"t={t:.2f}: ", contagion_brd(graph_fig4_1_right, [0, 1, 2], t))
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
