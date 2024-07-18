@@ -35,7 +35,7 @@ class UndirectedGraph:
         """
         self.num_nodes = number_of_nodes
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
-        self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
+        self.__outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
         self.neighbors = [[] for _ in range(number_of_nodes)]
     
@@ -98,6 +98,14 @@ class UndirectedGraph:
             self.neighbors[v] = self.edges_from(v)
         self.final = True
 
+    def get_action(self, nodeA: int):
+        """get current action for nodeA"""
+        return self.__outcome[int(nodeA)]
+
+    def set_action(self, nodeA: int, action: int):
+        """set action for nodeA"""
+        self.__outcome[int(nodeA)] = action
+
 def create_fb_graph(filename = "facebook_combined.txt"):
     ''' This method should return a undirected version of the facebook graph as an instance of the UndirectedGraph class.
     You may assume that the input graph has 4039 nodes.'''    
@@ -129,7 +137,7 @@ def contagion_brd(G, S, t):
 
     def get_candidates(neighbors):
         # get all neighbors with action Y that are not in S
-        return [u for u in neighbors if ((G.outcome[int(u)] == Y) and (u not in S))]
+        return [u for u in neighbors if ((G.get_action(u) == Y) and (u not in S))]
 
     def get_defector(candidates):
         # only nodes not in S can be in candidates
@@ -140,9 +148,9 @@ def contagion_brd(G, S, t):
                     continue
                 neighbors_X = 0
                 for u in cur_neighbors:
-                    if G.outcome[u] == X:
+                    if G.get_action(u) == X:
                         neighbors_X += 1        # X = 1, Y = 0
-                if should_defect(G.outcome[v], neighbors_X / len(cur_neighbors)):
+                if should_defect(G.get_action(v), neighbors_X / len(cur_neighbors)):
                     return v
             except Exception as e:
                 print(f"error during contagion_brd: {e}")
@@ -158,12 +166,12 @@ def contagion_brd(G, S, t):
 
         # permanently infect adopters in S with X
         for early_adopter in S:
-            G.outcome[early_adopter] = X
+            G.set_action(early_adopter, X)
 
         # infect the rest of the nodes with Y
         for v in range(G.number_of_nodes()):
             if v not in S:
-                G.outcome[v] = Y
+                G.set_action(v, Y)
 
         # run BRD on the set of nodes not in S
         # in this game if a node switches from Y to X, it will never switch back.
@@ -177,14 +185,14 @@ def contagion_brd(G, S, t):
         # get all neighbors of nodes in S that are not in S with action Y
         cur_candidates = set(get_candidates(all_neighbors_S))
         while defector := get_defector(cur_candidates):
-            G.outcome[defector] = 1 - G.outcome[defector]
+            G.set_action(defector, 1 - G.get_action(defector))      # switch action for defector
             cur_candidates.discard(defector)
             defector_neighbors = G.edges_from(defector)
             # if a node switches to X, its neighbors can be affected
             cur_candidates.update(get_candidates(defector_neighbors))
 
         # return a list of all nodes infected with X after BRD converges.
-        return [v for v in range(G.number_of_nodes()) if G.outcome[v] == X]
+        return [v for v in range(G.number_of_nodes()) if G.get_action(v) == X]
 
     except Exception as e:
         print(f"error during contagion_brd: {e}")
