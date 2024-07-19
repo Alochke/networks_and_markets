@@ -35,7 +35,7 @@ class UndirectedGraph:
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
         self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
-    
+
     def add_edge(self, nodeA, nodeB):
         """
         Add an undirected edge to the graph between nodeA and nodeB.
@@ -230,7 +230,7 @@ def run_contagion_brd(G, k, t, n_iterations):
         infected.append(len(cur_infected))
     return infected
 
-# plots for 9c
+
 def plot_surface(infection_rates, z_label, title, filename):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
     t_values = sorted(set(t for t, k, _ in infection_rates))
@@ -255,7 +255,6 @@ def plot_surface(infection_rates, z_label, title, filename):
     fig.colorbar(surf)
     plt.title(title)
     plt.savefig(filename)
-    plt.show()
 
 def plot_heatmap(infection_rates, title, filename):
     t_values = sorted(set(t for t, k, _ in infection_rates))
