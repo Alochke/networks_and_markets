@@ -11,6 +11,7 @@
 # please contact us before submission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 FB_GRAPH_SIZE = 4039
 SEED = 42
@@ -113,11 +114,11 @@ def contagion_brd(G, S, t):
        - Infect the rest of the nodes with Y
        - Run BRD on the set of nodes not in S
        Return a list of all nodes infected with X after BRD converges.'''
-    if t == 0:
+    if t == 0:      # if adoption threshold is 0, everyone will adopt since neighbors_X / neighbors >= 0 for all nodes.
         return [i for i in range(G.num_nodes)]
     
     def should_defect(action, p):
-        return (action == Y and p >= t)
+        return (action == Y and p >= t)     # in this game no player will switch from X to Y
 
     def get_candidates(neighbors):
         # get all neighbors with action Y that are not in S
@@ -162,7 +163,7 @@ def contagion_brd(G, S, t):
     for node in S:
         cur_candidates.update(get_candidates(G.edges_from(node)))
     while get_defector(cur_candidates):
-        G.outcome[defector] = X
+        G.outcome[defector] = X     # in this game players only switch from Y to X
         cur_candidates.discard(defector)
         S.append(defector)
         defector_neighbors = G.edges_from(defector)
@@ -199,7 +200,7 @@ def test_contagion_brd():
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
-    return 0.5      # threshold = 1/2
+    return 0.25      # threshold = 1/2
 
 def q_incompletecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 does not cascade completely.'''
@@ -229,7 +230,7 @@ def run_contagion_brd(G, k, t, n_iterations):
     return infected
 
 # plots for 9c
-def plot_surface(infection_rates, z_label, title):
+def plot_surface(infection_rates, z_label, title, filename):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
@@ -252,9 +253,10 @@ def plot_surface(infection_rates, z_label, title):
 
     fig.colorbar(surf)
     plt.title(title)
+    plt.savefig(filename)
     plt.show()
 
-def plot_heatmap(infection_rates, title):
+def plot_heatmap(infection_rates, title, filename):
     t_values = sorted(set(t for t, k, _ in infection_rates))
     k_values = sorted(set(k for t, k, _ in infection_rates))
 
@@ -270,6 +272,7 @@ def plot_heatmap(infection_rates, title):
     plt.xlabel('Threshold t')
     plt.ylabel('Number of Early Adopters k')
     plt.title(title)
+    plt.savefig(filename)
     plt.show()
 
 
@@ -286,7 +289,7 @@ def main():
         n_iterations = 1
     infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
     print("nodes infected on average: ", np.average(infected))
-    print("variance of infected nodes: ", np.var(infected))
+    print("standard deviation of infected nodes: ", np.std(infected))
     print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
 
     # === Problem 9(c) === #
@@ -311,12 +314,12 @@ def main():
             print_debug(f"{infection_rates[-1]}")
 
     # plot infections
-    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes')
-    plot_heatmap(infection_rates, 'Average Infected Heatmap')
+    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes', 'average_infected_surface.png')
+    plot_heatmap(infection_rates, 'Average Infected Heatmap', 'average_infected_heatmap.png')
 
     # plot cascades
-    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades')
-    plot_heatmap(cascades, 'Number of Cascades Heatmap')
+    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades', 'number_of_cascades_surface.png')
+    plot_heatmap(cascades, 'Number of Cascades Heatmap', 'number_of_cascades_heatmap.png')
 
     # === OPTIONAL: Bonus Question 2 === #
     # TODO: Put analysis code here
