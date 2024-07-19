@@ -34,7 +34,7 @@ class UndirectedGraph:
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
         self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
-    
+
     def add_edge(self, nodeA, nodeB):
         """
         Add an undirected edge to the graph between nodeA and nodeB.
@@ -199,7 +199,7 @@ def test_contagion_brd():
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
-    return 0.5      # threshold = 1/2
+    return 0.25      # threshold = 1/2
 
 def q_incompletecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 does not cascade completely.'''
@@ -228,6 +228,7 @@ def run_contagion_brd(G, k, t, n_iterations):
         infected.append(len(cur_infected))
     return infected
 
+
 # plot for 9c
 def plot_surface(infection_rates, z_label, title):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
@@ -254,6 +255,24 @@ def plot_surface(infection_rates, z_label, title):
     plt.title(title)
     plt.savefig(f"q9 {title}")
 
+def plot_heatmap(infection_rates, title):
+    t_values = sorted(set(t for t, k, _ in infection_rates))
+    k_values = sorted(set(k for t, k, _ in infection_rates))
+
+    Z = np.zeros((len(k_values), len(t_values)))
+
+    for t, k, avg_infected in infection_rates:
+        t_idx = t_values.index(t)
+        k_idx = k_values.index(k)
+        Z[k_idx, t_idx] = avg_infected
+
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(Z, xticklabels=t_values, yticklabels=k_values, cmap='viridis', annot=True, fmt=".1f")
+    plt.xlabel('Threshold t')
+    plt.ylabel('Number of Early Adopters k')
+    plt.title(title)
+    plt.show()
+
 
 def main():
     # === Problem 9(a) === #
@@ -267,7 +286,8 @@ def main():
     else:
         n_iterations = 1
     infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
-    print("nodes infected on average: ", np.average(infected))
+    print("nodes infected on average: ", np.mean(infected))
+    print("variance of infected nodes: ", np.var(infected))
     print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
 
     # === Problem 9(c) === #
@@ -293,9 +313,11 @@ def main():
 
     # plot infections
     plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes')
+    plot_heatmap(infection_rates, 'Average Infected Heatmap')
 
     # plot cascades
     plot_surface(cascades, 'Number of Cascades', 'Number of Cascades')
+    plot_heatmap(cascades, 'Number of Cascades Heatmap')
 
     # === OPTIONAL: Bonus Question 2 === #
     # TODO: Put analysis code here
