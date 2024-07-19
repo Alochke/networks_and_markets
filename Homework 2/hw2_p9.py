@@ -15,7 +15,7 @@ import seaborn as sns
 
 FB_GRAPH_SIZE = 4039
 SEED = 42
-DEBUG = True
+DEBUG = False
 
 # player actions
 X = 1
@@ -280,43 +280,43 @@ def main():
     # === Problem 9(b) === #
     print("\n === Problem 9(b) === ")
     fb_graph = create_fb_graph()
-    # if not DEBUG:
-    #     n_iterations = 100
-    # else:
-    #     n_iterations = 1
-    # infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
-    # print("nodes infected on average: ", np.average(infected))
-    # print("standard deviation of infected nodes: ", np.std(infected))
-    # print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
-    #
-    # # === Problem 9(c) === #
-    # print("\n === Problem 9(c) === ")
-    # infection_rates = []
-    # cascades = []
-    # if not DEBUG:
-    #     t_values = np.arange(0, 0.55, 0.05)
-    #     k_values = np.arange(0, 251, 10)
-    #     n_iterations = 10
-    # else:
-    #     t_values = np.arange(0, 0.55, 0.05)
-    #     k_values = np.arange(0, 41, 10)
-    #     n_iterations = 1
-    #
-    # for t in t_values:
-    #     for k in k_values:
-    #         infected = run_contagion_brd(fb_graph, k, t, n_iterations)
-    #         avg_infected = np.average(infected)
-    #         infection_rates.append((float(t), int(k), float(avg_infected)))
-    #         cascades.append((float(t), int(k), float(np.sum(np.array(infected) == fb_graph.number_of_nodes()))))
-    #         print_debug(f"{infection_rates[-1]}")
-    #
-    # # plot infections
-    # plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes', 'average_infected_surface.png')
-    # plot_heatmap(infection_rates, 'Average Infected Heatmap', 'average_infected_heatmap.png')
-    #
-    # # plot cascades
-    # plot_surface(cascades, 'Number of Cascades', 'Number of Cascades', 'number_of_cascades_surface.png')
-    # plot_heatmap(cascades, 'Number of Cascades Heatmap', 'number_of_cascades_heatmap.png')
+    if not DEBUG:
+        n_iterations = 100
+    else:
+        n_iterations = 1
+    infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
+    print("nodes infected on average: ", np.average(infected))
+    print("standard deviation of infected nodes: ", np.std(infected))
+    print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
+
+    # === Problem 9(c) === #
+    print("\n === Problem 9(c) === ")
+    infection_rates = []
+    cascades = []
+    if not DEBUG:
+        t_values = np.arange(0, 0.55, 0.05)
+        k_values = np.arange(0, 251, 10)
+        n_iterations = 10
+    else:
+        t_values = np.arange(0, 0.55, 0.05)
+        k_values = np.arange(0, 41, 10)
+        n_iterations = 1
+
+    for t in t_values:
+        for k in k_values:
+            infected = run_contagion_brd(fb_graph, k, t, n_iterations)
+            avg_infected = np.average(infected)
+            infection_rates.append((float(t), int(k), float(avg_infected)))
+            cascades.append((float(t), int(k), float(np.sum(np.array(infected) == fb_graph.number_of_nodes()))))
+            print_debug(f"{infection_rates[-1]}")
+
+    # plot infections
+    plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes', 'average_infected_surface.png')
+    plot_heatmap(infection_rates, 'Average Infected Heatmap', 'average_infected_heatmap.png')
+
+    # plot cascades
+    plot_surface(cascades, 'Number of Cascades', 'Number of Cascades', 'number_of_cascades_surface.png')
+    plot_heatmap(cascades, 'Number of Cascades Heatmap', 'number_of_cascades_heatmap.png')
 
     # === OPTIONAL: Bonus Question 2 === #
     print("\n === OPTIONAL: Bonus Question 2 === ")
