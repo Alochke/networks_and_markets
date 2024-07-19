@@ -270,7 +270,6 @@ def plot_heatmap(infection_rates, title, filename):
     plt.ylabel('Number of Early Adopters k')
     plt.title(title)
     plt.savefig(filename)
-    plt.show()
 
 
 def main():
