@@ -100,7 +100,7 @@ def create_fb_graph(filename = "facebook_combined.txt"):
     except Exception as e:
         print(f"File related error: {e}")
         exit()
-    
+
     res.finalize_neighbors()
     return res
 
@@ -117,7 +117,7 @@ def contagion_brd(G, S, t):
        '''
     if t == 0:      # if adoption threshold is 0, everyone will adopt since neighbors_X / neighbors >= 0 for all nodes.
         return [i for i in range(G.num_nodes)]
-    
+
     def should_defect(action, p):
         return (action == Y and p >= t)     # in this game no player will switch from X to Y
 
@@ -142,7 +142,7 @@ def contagion_brd(G, S, t):
                 return True
         return False     # no defectors found
 
-    
+
     if len(S) == 0:     # no early adopters
         return []
 
@@ -170,6 +170,7 @@ def contagion_brd(G, S, t):
         # if a node switches to X, its neighbors can be affected
         cur_candidates.update(get_candidates(defector_neighbors))
 
+    # return a list of all nodes infected with X after BRD converges.
     return [int(v) for v in np.where(G.outcome == X)[0]]
 
 def test_contagion_brd():
@@ -227,7 +228,7 @@ def run_contagion_brd(G, k, t, n_iterations):
         infected.append(len(cur_infected))
     return infected
 
-
+# plots for 9c
 def plot_surface(infection_rates, z_label, title, filename):
     '''infection_rates is a list of (t, k, avg_infection) triplets'''
     t_values = sorted(set(t for t, k, _ in infection_rates))
@@ -270,7 +271,6 @@ def plot_heatmap(infection_rates, title, filename):
     plt.ylabel('Number of Early Adopters k')
     plt.title(title)
     plt.savefig(filename)
-    plt.show()
 
 
 def main():
@@ -319,17 +319,42 @@ def main():
     plot_heatmap(cascades, 'Number of Cascades Heatmap', 'number_of_cascades_heatmap.png')
 
     # === OPTIONAL: Bonus Question 2 === #
-    # TODO: Put analysis code here
-    pass
+    print("\n === OPTIONAL: Bonus Question 2 === ")
+    t_values = np.arange(0, 1.05, 0.05)
+    min_k_values = [min_early_adopters(fb_graph, t) for t in t_values]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(t_values, min_k_values, marker='o', linestyle='-', color='b')
+    plt.xlabel('Threshold t')
+    plt.ylabel('Minimum Number of Early Adopters k')
+    plt.title('Cascade conditions: Minimum Number of Early Adopters vs. Threshold t')
+    plt.grid(True)
+    plt.savefig('min_early_adopters_vs_threshold.png')
 
 # === OPTIONAL: Bonus Question 2 === #
+
+def binary_search_cascades(G:UndirectedGraph, low_k, high_k, t):
+    mid_k = (high_k + low_k) // 2
+    if high_k < low_k+2:
+        return mid_k
+    cascade = False
+    n_iterations = 100 if not DEBUG else 1
+    for _ in range(100):
+        infected = run_contagion_brd(G, mid_k, t, n_iterations)
+        if infected[0] == G.number_of_nodes():
+            cascade = True
+            break
+    if cascade:
+        binary_search_cascades(G, low_k, mid_k, t)
+    else:
+        binary_search_cascades(G, mid_k, high_k, t)
+
 def min_early_adopters(G, q):
     '''Given an undirected graph G, and float threshold t, approximate the 
        smallest number of early adopters that will call a complete cascade.
        Return an integer between [0, G.number_of_nodes()]'''
-    pass
+    return binary_search_cascades(G, 0, G.number_of_nodes(), q)
 
 if __name__ == "__main__":
     main()
-
 
