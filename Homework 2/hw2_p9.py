@@ -11,12 +11,8 @@
 # please contact us before submission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-import traceback
 
 FB_GRAPH_SIZE = 4039
-FB_GRAPH_NUM_PAIRS = (FB_GRAPH_SIZE * (FB_GRAPH_SIZE - 1)) / 2
 SEED = 42
 DEBUG = False
 
@@ -38,7 +34,6 @@ class UndirectedGraph:
         self.adj_matrix = np.zeros((number_of_nodes, number_of_nodes), dtype=int)
         self.outcome = np.zeros(number_of_nodes, dtype=int)  # initialize all actions to Y
         self.final = False
-        self.neighbors = [[] for _ in range(number_of_nodes)]
     
     def add_edge(self, nodeA, nodeB):
         """
@@ -61,15 +56,7 @@ class UndirectedGraph:
         if not self.final:
             return list(np.where(self.adj_matrix[int(nodeA)] > 0)[0])
         else:
-            try:
-                return self.neighbors[int(nodeA)]
-            except Exception as e:
-                print(f"error during edges_from: {e}")
-                traceback.print_exc()
-                print("nodeA type: ", type(nodeA))
-                print("node: ", nodeA)
-                print("node neighbors: ", list(np.where(self.adj_matrix[int(nodeA)] > 0)[0]))
-                exit()
+            return self.neighbors[int(nodeA)]
     
     def check_edge(self, nodeA, nodeB):
         """
@@ -95,6 +82,7 @@ class UndirectedGraph:
         print(self.adj_matrix)
 
     def finalize_neighbors(self):
+        self.neighbors = [[] for _ in range(self.num_nodes)]
         for v in range(self.num_nodes):
             self.neighbors[v] = self.edges_from(v)
         self.final = True
@@ -105,17 +93,14 @@ def create_fb_graph(filename = "facebook_combined.txt"):
     res = UndirectedGraph(FB_GRAPH_SIZE)
 
     try:
-        with open(os.path.join(os.getcwd(), filename), encoding='utf-8') as f:
+        with open(filename) as f:
             for line in f:
                 res.add_edge(*(int(node) for node in line.split()))
     except Exception as e:
         print(f"File related error: {e}")
         exit()
-
-    res.finalize_neighbors()   # avoid recalculating neighbors
-    # print(f"create_fb_graph: num_nodes = {res.num_nodes}")
-    # for v in range(res.num_nodes):
-    #     print(f"v {v}: ", res.outcome[res.edges_from(v)])
+    
+    res.finalize_neighbors()
     return res
 
 
@@ -128,69 +113,64 @@ def contagion_brd(G, S, t):
        - Infect the rest of the nodes with Y
        - Run BRD on the set of nodes not in S
        Return a list of all nodes infected with X after BRD converges.'''
+    if t == 0:
+        return [i for i in range(G.num_nodes)]
+    
     def should_defect(action, p):
-        return (action == Y and p >= t) or (action == X and p < t)
+        return (action == Y and p >= t)
 
     def get_candidates(neighbors):
         # get all neighbors with action Y that are not in S
-        return neighbors[(G.outcome[neighbors] == Y) & np.isin(neighbors, S, invert=True)]
+        returned = []
+        for i in neighbors:
+            if G.outcome[i] == Y:
+                returned.append(i)
+        return returned
 
     def get_defector(candidates):
+        nonlocal defector
         # only nodes not in S can be in candidates
         for v in candidates:
-            try:
-                neighbors = G.edges_from(v)
-                if not neighbors:
-                    continue
-                neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
-                if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
-                    return v
-            except Exception as e:
-                print(f"error during contagion_brd: {e}")
-                traceback.print_exc()
-                print("v: ", v)
-                print("v neighbors: ", neighbors)
-                exit()
-        return None     # no defectors found
+            neighbors = G.edges_from(v)
+            if not neighbors:
+                continue
+            neighbors_X = np.sum(G.outcome[neighbors])  # X = 1, Y = 0
+            if should_defect(G.outcome[v], neighbors_X / len(neighbors)):
+                defector = v
+                return True
+        return False     # no defectors found
 
-    try:
-        if len(S) == 0:     # no early adopters
-            return []
+    
+    if len(S) == 0:     # no early adopters
+        return []
 
-        # permanently infect adopters in S with X
-        G.outcome[S] = X
+    # permanently infect adopters in S with X
+    G.outcome[S] = X
 
-        # infect the rest of the nodes with Y
-        G.outcome[np.setdiff1d(np.arange(G.num_nodes), S)] = Y
+    # infect the rest of the nodes with Y
+    G.outcome[np.setdiff1d(np.arange(G.num_nodes), S)] = Y
 
-        # run BRD on the set of nodes not in S
-        # in this game if a node switches from Y to X, it will never switch back.
-        # therefore it's sufficient to start by inspecting neighbors of S with action Y
-        # for each node that switched to Y, add its neighbors with action Y to the candidates set
-        # finish when none of the candidates want to switch.
-        # general BRD alg. was too slow on fb dataset. this version is equivalent for this game.
-        all_neighbors_S = np.concatenate([G.edges_from(v) for v in S])
-        # get all neighbors of nodes in S that are not in S with action Y
-        cur_candidates = set(get_candidates(all_neighbors_S))
-        while defector := get_defector(cur_candidates):
-            G.outcome[defector] = 1 - G.outcome[defector]
-            cur_candidates.discard(defector)
-            defector_neighbors = np.array(G.edges_from(defector))
-            # if a node switches to X, its neighbors can be affected
-            cur_candidates.update(get_candidates(defector_neighbors))
+    defector = -1
 
-        # return a list of all nodes infected with X after BRD converges.
-        # return list(np.where(G.outcome == X)[0])
-        # convert np.int64 to standard python int for submission
-        return [int(v) for v in np.where(G.outcome == X)[0]]
+    # run BRD on the set of nodes not in S
+    # in this game if a node switches from Y to X, it will never switch back.
+    # therefore it's sufficient to start by inspecting neighbors of S with action Y
+    # for each node that switched to X, add its neighbors with action Y to the candidates set
+    # finish when none of the candidates want to switch.
+    # general BRD alg. was too slow on fb dataset. this version is equivalent for this game.
+    cur_candidates = set()
+    for node in S:
+        cur_candidates.update(get_candidates(G.edges_from(node)))
+    while get_defector(cur_candidates):
+        G.outcome[defector] = X
+        cur_candidates.discard(defector)
+        S.append(defector)
+        defector_neighbors = G.edges_from(defector)
+        # if a node switches to X, its neighbors can be affected
+        cur_candidates.update(get_candidates(defector_neighbors))
 
-    except Exception as e:
-        print(f"error during contagion_brd: {e}")
-        traceback.print_exc()
-        traceback.print_exception(e)
-        print(traceback.format_exc())
-        print("S: ", S)
-        exit()
+    # return a list of all nodes infected with X after BRD converges.
+    return [int(v) for v in S]
 
 
 def test_contagion_brd():
@@ -219,11 +199,11 @@ def test_contagion_brd():
 
 def q_completecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 cascades completely.'''
-    return 0.25      # threshold = 1/2
+    return 0.5      # threshold = 1/2
 
 def q_incompletecascade_graph_fig4_1_left():
     '''Return a float t s.t. the left graph in Figure 4.1 does not cascade completely.'''
-    0.6
+    return 0.6
 
 def q_completecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 cascades completely.'''
@@ -231,7 +211,7 @@ def q_completecascade_graph_fig4_1_right():
 
 def q_incompletecascade_graph_fig4_1_right():
     '''Return a float t s.t. the right graph in Figure 4.1 does not cascade completely.'''
-    0.4
+    return 0.4
 
 def print_debug(str):
     if DEBUG:
@@ -243,16 +223,9 @@ def run_contagion_brd(G, k, t, n_iterations):
     infected = []
     rng = np.random.default_rng(SEED)
     for i in range(n_iterations):
-        try:
-            early_adopters = rng.choice(np.arange(FB_GRAPH_SIZE), size=k, replace=False)
-            # print(f"t={t}, k={k}, iteration {i}: Early adopters: {early_adopters}")
-            cur_infected = contagion_brd(G, early_adopters, t)
-            # print(f"t={t}, k={k}, iteration {i}: Infected nodes: {cur_infected}")
-            infected.append(len(cur_infected))
-            # print(f"t={t}, k={k}, iteration {i}: infected: {infected}")
-        except Exception as e:
-            print(f"error during run_contagion_brd iteration {i}: {e}")
-            traceback.print_exc()
+        early_adopters = rng.choice(np.arange(FB_GRAPH_SIZE), size=k, replace=False).tolist()
+        cur_infected = contagion_brd(G, early_adopters, t)
+        infected.append(len(cur_infected))
     return infected
 
 # plots for 9c
@@ -312,7 +285,7 @@ def main():
     else:
         n_iterations = 1
     infected = run_contagion_brd(fb_graph, 10, 0.1, n_iterations)
-    print("nodes infected on average: ", np.mean(infected))
+    print("nodes infected on average: ", np.average(infected))
     print("variance of infected nodes: ", np.var(infected))
     print("number of cascades:", np.sum(np.array(infected) == fb_graph.number_of_nodes()), "in", n_iterations, "iterations")
 
@@ -331,15 +304,11 @@ def main():
 
     for t in t_values:
         for k in k_values:
-            try:
-                infected = run_contagion_brd(fb_graph, k, t, n_iterations)
-                avg_infected = np.mean(infected)
-                infection_rates.append((float(t), int(k), float(avg_infected)))
-                cascades.append((float(t), int(k), float(np.sum(np.array(infected) == fb_graph.number_of_nodes()))))
-                print_debug(f"{infection_rates[-1]}")
-            except Exception as e:
-                print(f"Error during main loop for t={t}, k={k}: {e}")
-                traceback.print_exc()
+            infected = run_contagion_brd(fb_graph, k, t, n_iterations)
+            avg_infected = np.average(infected)
+            infection_rates.append((float(t), int(k), float(avg_infected)))
+            cascades.append((float(t), int(k), float(np.sum(np.array(infected) == fb_graph.number_of_nodes()))))
+            print_debug(f"{infection_rates[-1]}")
 
     # plot infections
     plot_surface(infection_rates, 'Average Infected', 'Average Infected Nodes')
@@ -361,12 +330,6 @@ def min_early_adopters(G, q):
     pass
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(f"error: {e}")
-        print(traceback.format_exc())
-        traceback.print_exc()
-        traceback.print_exception(e)
+    main()
 
 
