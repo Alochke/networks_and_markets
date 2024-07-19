@@ -324,7 +324,10 @@ def main():
         t_values = np.arange(0, 1.05, 0.05)
     else:
         t_values = np.arange(0, 0.55, 0.1)
-    min_k_values = [min_early_adopters(fb_graph, t) for t in t_values]
+    min_k_values = []
+    for t in t_values:
+        min_k_values.append(min_early_adopters(fb_graph, t))
+        print_debug(f"t={t}, min_k = {min_k_values[-1]}")
 
     plt.figure(figsize=(10, 6))
     plt.plot(t_values, min_k_values, marker='o', linestyle='-', color='b')
@@ -348,9 +351,9 @@ def binary_search_cascades(G:UndirectedGraph, low_k, high_k, t):
             cascade = True
             break
     if cascade:
-        binary_search_cascades(G, low_k, mid_k, t)
+        return binary_search_cascades(G, low_k, mid_k, t)
     else:
-        binary_search_cascades(G, mid_k, high_k, t)
+        return binary_search_cascades(G, mid_k, high_k, t)
 
 def min_early_adopters(G, q):
     '''Given an undirected graph G, and float threshold t, approximate the 
