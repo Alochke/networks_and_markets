@@ -113,7 +113,8 @@ def contagion_brd(G, S, t):
        - Permanently infect the nodes in S with X
        - Infect the rest of the nodes with Y
        - Run BRD on the set of nodes not in S
-       Return a list of all nodes infected with X after BRD converges.'''
+       Return a list of all nodes infected with X after BRD converges.
+       Side effects: S will be mutated.'''
     if t == 0:      # if adoption threshold is 0, everyone will adopt since neighbors_X / neighbors >= 0 for all nodes.
         return [i for i in range(G.num_nodes)]
     
@@ -171,8 +172,8 @@ def contagion_brd(G, S, t):
         cur_candidates.update(get_candidates(defector_neighbors))
 
     # return a list of all nodes infected with X after BRD converges.
-    return [int(v) for v in S]
-
+    # return [int(v) for v in S]
+    return S
 
 def test_contagion_brd():
     #   0 - 1 - 2 - 3
