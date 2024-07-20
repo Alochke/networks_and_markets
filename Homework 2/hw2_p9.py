@@ -344,7 +344,7 @@ def binary_search_cascades(G:UndirectedGraph, low_k, high_k, t):
     if high_k < low_k+2:
         return mid_k
     cascade = False
-    n_iterations = 100 if not DEBUG else 1
+    n_iterations = 10 if not DEBUG else 1
     for _ in range(n_iterations):
         infected = run_contagion_brd(G, mid_k, t, 1)
         if infected[0] == G.number_of_nodes():
@@ -359,7 +359,8 @@ def min_early_adopters(G, q):
     '''Given an undirected graph G, and float threshold t, approximate the 
        smallest number of early adopters that will call a complete cascade.
        Return an integer between [0, G.number_of_nodes()]'''
-    return binary_search_cascades(G, 0, G.number_of_nodes(), q)
+    k = binary_search_cascades(G, 0, G.number_of_nodes(), q)
+    return k if k > 0 else 1
 
 if __name__ == "__main__":
     main()
