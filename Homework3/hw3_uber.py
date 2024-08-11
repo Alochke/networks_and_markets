@@ -11,6 +11,7 @@
 # please contact us before sumission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
+from hw3_matchingmarket import market_eq
 
 # === Problem 9(a) ===
 def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs):
@@ -46,10 +47,8 @@ def stable_outcome(n, m, V):
         allocated to rider i.
     -   A_drivers is an m-element list, where A_drivers[j] is the value
         allocated to driver j.'''
-    M = [0] * n
-    A_riders = [0] * n
-    A_drivers = [0] * m
-    return (M, A_riders, A_drivers)
+    A_drivers, M = market_eq(n, m, V)
+    return (M, [V[i][M[i]] - A_drivers[M[i]] if M[i] else 0 for i in range(n)], A_drivers)
 
 # === Problem 10(a) ===
 def rider_driver_example_1():
