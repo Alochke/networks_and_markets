@@ -5,6 +5,8 @@
 # We will pass your grade through an autograder which expects a specific format.
 # =====================================
 
+SEED = 42
+
 
 # Do not include any other files or an external package, unless it is one of
 # [numpy, pandas, scipy, matplotlib, random]
@@ -27,9 +29,9 @@ def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, dri
         destination of rider i (in 0...n-1)
     -   driver_locs is a list of points, where driver_locs[j] is the current
         location of driver j (in 0...m-1)
-    Output a tuple (n, m, V) representing a bipartite exchange network, where:
-    -   V is an n x m list, with V[i][j] is the value of the edge between
-        rider i (in 0...n-1) and driver j (in 0...m-1)'''
+    - Output a tuple (n, m, V) representing a bipartite exchange network, where:
+    V is an n x m list, with V[i][j] is the value of the edge between
+    rider i (in 0...n-1) and driver j (in 0...m-1)'''
     L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1])
     non_neg = lambda x: x if x >= 0 else 0
     V = [[non_neg(rider_vals[i] - (L1_norm(rider_locs[i], driver_locs[j]) + L1_norm(rider_locs[i], rider_dests[i]))) for j in range(m)] for i in range(n)]
@@ -64,11 +66,10 @@ def random_riders_drivers_stable_outcomes(n, m):
     '''Generates n riders, m drivers, each located randomly on the grid,
     with random destinations, each rider with a ride value of 100, 
     and returns the stable outcome.'''
-    value = 100
-    M = [0] * n
-    A_riders = [0] * n
-    A_drivers = [0] * m
-    return (M, A_riders, A_drivers)
+    GRID_SIZE, VALUE = 100
+    rng = np.random.default_rng(SEED)
+    n, m, ex_net = exchange_network_from_uber(n, m, GRID_SIZE, [VALUE] * n, rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (m, 2)))
+    return stable_outcome(n, m ex_net)
 
 # === Bonus 3(a) (Optional) ===
 def public_transport_stable_outcome(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs, a, b):
