@@ -12,7 +12,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # === Problem 9(a) ===
 def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs):
     '''Given a market scenario for ridesharing, with n riders, and
@@ -30,7 +29,9 @@ def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, dri
     Output a tuple (n, m, V) representing a bipartite exchange network, where:
     -   V is an n x m list, with V[i][j] is the value of the edge between
         rider i (in 0...n-1) and driver j (in 0...m-1)'''
-    V = [[0] * m for _ in range(n)]
+    L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1])
+    non_neg = lambda x: x if x >= 0 else 0
+    V = [[non_neg(rider_vals[i] - (L1_norm(rider_locs[i], driver_locs[j]) + L1_norm(rider_locs[i], rider_dests[i]))) for j in range(m)] for i in range(n)]
     return (n, m, V)
 
 
