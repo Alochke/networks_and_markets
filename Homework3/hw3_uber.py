@@ -5,13 +5,17 @@
 # We will pass your grade through an autograder which expects a specific format.
 # =====================================
 
+SEED = 42
+NUMBER_OF_TESTS = 100
+
 
 # Do not include any other files or an external package, unless it is one of
 # [numpy, pandas, scipy, matplotlib, random]
 # please contact us before sumission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
-
+import seaborn as sns
+from hw3_matchingmarket import market_eq
 
 # === Problem 9(a) ===
 def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs):
@@ -27,10 +31,12 @@ def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, dri
         destination of rider i (in 0...n-1)
     -   driver_locs is a list of points, where driver_locs[j] is the current
         location of driver j (in 0...m-1)
-    Output a tuple (n, m, V) representing a bipartite exchange network, where:
-    -   V is an n x m list, with V[i][j] is the value of the edge between
-        rider i (in 0...n-1) and driver j (in 0...m-1)'''
-    V = [[0] * m for _ in range(n)]
+    - Output a tuple (n, m, V) representing a bipartite exchange network, where:
+    V is an n x m list, with V[i][j] is the value of the edge between
+    rider i (in 0...n-1) and driver j (in 0...m-1)'''
+    L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1])
+    non_neg = lambda x: x if x >= 0 else 0
+    V = [[non_neg(rider_vals[i] - (L1_norm(rider_locs[i], driver_locs[j]) + L1_norm(rider_locs[i], rider_dests[i]))) for j in range(m)] for i in range(n)]
     return (n, m, V)
 
 
@@ -45,30 +51,33 @@ def stable_outcome(n, m, V):
         allocated to rider i.
     -   A_drivers is an m-element list, where A_drivers[j] is the value
         allocated to driver j.'''
-    M = [0] * n
-    A_riders = [0] * n
-    A_drivers = [0] * m
-    return (M, A_riders, A_drivers)
+    A_drivers, M = market_eq(n, m, V)
+    return (M, [V[i][M[i]] - A_drivers[M[i]] if M[i] else 0 for i in range(n)], A_drivers)
 
 # === Problem 10(a) ===
 def rider_driver_example_1():
-    # TODO fill in your own example
-    return (n, m, l, rider_vals, rider_locs, rider_dests, driver_locs)
+    return (5, 7, 200, 
+            [59, 333, 205, 61, 54], 
+            [(187, 150), (182, 165), (27, 186), (168,  28), (195, 149)], 
+            [(62, 27), (77, 181), (157,  45), (98, 170), (128,  61)],
+            [(22, 193), (46, 103), (138,  64), (103,  56), (167, 121), (35, 66), (137, 135)])
 
 def rider_driver_example_2():
-    # TODO fill in your own example
-    return (n, m, l, rider_vals, rider_locs, rider_dests, driver_locs)
+    return (7, 5, 50, 
+            [43, 17, 30, 24, 13, 26, 7], 
+            [(24,  6), (12, 12), (1, 19), (36, 32), (38, 41), (3, 38), ( 5, 16)],
+            [(4, 7), (24, 22), (17, 21), (21, 28), (31, 18), (37, 31), (24,  5)], 
+            [(41, 11), (16, 38), (42, 49), (41, 40), (36, 42)])
 
 # === Problem 10(b) ===
 def random_riders_drivers_stable_outcomes(n, m):
     '''Generates n riders, m drivers, each located randomly on the grid,
     with random destinations, each rider with a ride value of 100, 
     and returns the stable outcome.'''
-    value = 100
-    M = [0] * n
-    A_riders = [0] * n
-    A_drivers = [0] * m
-    return (M, A_riders, A_drivers)
+    GRID_SIZE, VALUE = 100
+    rng = np.random.default_rng(SEED)
+    ex_net = exchange_network_from_uber(n, m, GRID_SIZE, [VALUE] * n, rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (m, 2)))[2]
+    return stable_outcome(n, m ex_net)
 
 # === Bonus 3(a) (Optional) ===
 def public_transport_stable_outcome(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs, a, b):
@@ -85,10 +94,138 @@ def public_transport_stable_outcome(n, m, l, rider_vals, rider_locs, rider_dests
     '''
     pass
 
+def test_n_m(n: int, m: int):
+    """
+    Simulates multiple tests of rider and driver interactions to analyze their profit and price distributions.
+
+    Parameters:
+    n (int): The number of riders.
+    m (int): The number of drivers.
+
+    Returns:
+    tuple: A tuple containing the following metrics:
+        - Average rider social value (float)
+        - Average rider profit (float)
+        - Standard deviation of rider profits (float)
+        - Minimum rider profit in all tests (int)
+        - Maximum rider profit in all tests (int)
+        - Average SV of the drivers (float)
+        - Average price (float)
+        - Standard deviation of prices (float)
+        - Minimum price in all tests (int)
+        - Maximum price in all tests (int)
+    """
+    rider_profit = []
+    prices = []
+    for i in range(NUMBER_OF_TESTS):
+        A_riders, A_drivers = random_riders_drivers_stable_outcomes(n, m)[1:2]
+        rider_profit += A_riders
+        prices += A_drivers
+    avg_rider_profit = np.average(rider_profit)
+    avg_price = np.average(prices)
+    return NUMBER_OF_TESTS * avg_rider_profit, avg_rider_profit, np.std(rider_profit), min(rider_profit), max(rider_profit), NUMBER_OF_TESTS * avg_price, avg_price, np.std(prices), min(prices), max(prices)
+
+# plots for 10b, I leave that as optional.
+# def plot_surface(n_m, stats, title):
+#     N_INDX = 0
+#     M_INDX = 1
+#     n_values = sorted(set(n for n, m in n_m))
+#     m_values = sorted(set(m for n, m in n_m))
+
+#     T, K = np.meshgrid(n_values, m_values)
+#     Z = np.zeros(T.shape)
+
+#     for i in range(len(stats)):
+#         n_idx = n_values.index(n_m[i][N_INDX])
+#         m_idx = m_values.index(n_m[i][M_INDX])
+#         Z[m_idx, n_idx] = stats[i]
+
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     surf = ax.plot_surface(T, K, Z, cmap='viridis')
+
+#     ax.set_xlabel('Number of riders')
+#     ax.set_ylabel('Number of drivers')
+#     ax.set_zlabel(title)
+
+#     fig.colorbar(surf)
+#     plt.title(title)
+#     plt.savefig(f'{title}.png')
+
+# def plot_heatmap(n_m, stats, title):
+#     N_INDX = 0
+#     M_INDX = 1
+#     n_values = sorted(set(n for n, m in n_m))
+#     m_values = sorted(set(m for n, m in n_m))
+
+#     Z = np.zeros((len(m_values), len(n_values)))
+
+#     for i in range(len(stats)):
+#         n_idx = n_values.index(n_m[i][N_INDX])
+#         m_idx = m_values.index(n_m[i][M_INDX])
+#         Z[m_idx, n_idx] = stats[i]
+
+#     plt.figure(figsize=(12, 8))
+#     sns.heatmap(Z, xticklabels=n_values, yticklabels=m_values, cmap='viridis', annot=True, fmt=".1f")
+#     plt.xlabel('Number of riders')
+#     plt.ylabel('Number of drivers')
+#     plt.title(title)
+#     plt.savefig(f"{title}.png")
+
 
 def main():
-    # TODO: Put your analysis and plotting code here, if any
-    print("hello world")
+    # === Problem 10(a) === #
+    print("=== Problem 10(a) === ")
+
+    print(f"example1: {rider_driver_example_1()}")
+    print(f"example1 stable outcome: {stable_outcome(exchange_network_from_uber(*rider_driver_example_1()))}")
+
+    print(f"example2: {rider_driver_example_2()}")
+    print(f"example2 stable outcome: {stable_outcome(exchange_network_from_uber(*rider_driver_example_2()))}")
+    
+
+    # === Problem 10(b) === #
+    N_INDX = 0
+    M_INDX = 1
+    NUM_STATS = 10
+
+    print("\n=== Problem 10(b) ===")
+    client_nums = [(10, 10), (20, 5), (5, 20)]
+    # Stats is a lists such that in its cells are the following lists, respectively:
+    # - A list where in cell i there is an approximation of the average rider sovial value for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the average rider profit for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the standard deviation of rider's profit for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the minimal rider profit for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the maximal rider profit for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the average driver social value for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the average price for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the standard deviation of a price for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the minimum price for n riders and m drivers.
+    # - A list where in cell i there is an approximation of the maximum price for n riders and m drivers.
+    # n and m are detrmined by client_nums, where in cell i, (n, m) resides.
+    # I do it wierdly like this to eliminate code duplication.
+    stats = [[] for i in range(NUM_STATS)]
+    
+    for n, m in client_nums:
+            test_result = test_n_m(n, m)
+            for i in range(len(stats)):
+                stats[i].append(test_result[i])
+    stats_names = ["Average rider social value", 
+              "Average rider profits",
+              "Standard deviation of rider profits",
+              "Minimal rider profits",
+              "Maximal rider profits",
+              "Average driver social value", 
+              "Average price",
+              "Standard deviation of prices",
+              "Minimal price",
+              "Maximal price"]
+    
+    for i in range(len(client_nums)):
+        print(f"\nPrinting calculations for number of riders = {client_nums[i][N_INDX]}, number of drivers = {client_nums[i][M_INDX]}\n\n")
+        
+        for j in range(NUM_STATS):
+            print(f"{stats_names[j]}: {stats[j][i]}")
 
 if __name__ == "__main__":
     main()
