@@ -236,6 +236,8 @@ def adjust_prices(graph, P, constricted_set, n):
     return P  # Return the updated price list for clarity
 
 
+
+
 def max_matching(n, m, graph):
     """finds max matching from a bipartie  Prefferenced Choiced graph of n nodes (buyer) in right side
     m nodes (items) in left side"""
@@ -348,35 +350,6 @@ def market_eq(n, m, V):
 
     return P, M
 
-def adjust_prices(graph, P, constricted_set, n):
-    """
-    Adjust prices based on the neighbors of the constricted set in the graph.
-    Only the prices of items directly linked to the constricted set are increased.
-
-    Parameters:
-    graph (WeightedDirectedGraph): The graph used for max flow calculations.
-    P (list): Current prices of items.
-    constricted_set (list): List of buyers that form the constricted set.
-    n (int): Number of buyers, used to differentiate buyer and item indices.
-    """
-    # Find items that are neighbors of the constricted buyers
-    item_neighbors = set()
-    for buyer_index in constricted_set:
-        if buyer_index < n:  # Ensure it's a buyer index
-            for item_index in graph.neighbors(buyer_index):
-                if n <= item_index < n + len(P):  # Ensure it's within the item index range
-                    item_neighbors.add(item_index - n)  # Adjust to item index based on 'n'
-
-    # Increase prices for these items
-    for item_index in item_neighbors:
-        P[item_index] += 1  # Increase price by 1
-
-    # Normalize prices to make the minimum price 0
-    min_price = min(P)
-    if min_price != 0:
-        P = [price - min_price for price in P]  # Adjust all prices down by the minimum price
-
-    return P  # Return the updated price list for clarity
 
 
 
