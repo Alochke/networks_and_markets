@@ -14,7 +14,6 @@ NUMBER_OF_TESTS = 100
 # please contact us before sumission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from hw3_matchingmarket import market_eq
 
 # === Problem 9(a) ===
@@ -51,20 +50,20 @@ def stable_outcome(n, m, V):
         allocated to rider i.
     -   A_drivers is an m-element list, where A_drivers[j] is the value
         allocated to driver j.'''
-    A_drivers, M = market_eq(n, m, V)
+    A_drivers, M = market_eq(n, m, V) 
     return (M, [V[i][M[i]] - A_drivers[M[i]] if M[i] else 0 for i in range(n)], A_drivers)
 
 # === Problem 10(a) ===
 def rider_driver_example_1():
     return (5, 7, 200, 
-            [59, 333, 205, 61, 54], 
+            [118, 666, 410, 122, 104], 
             [(187, 150), (182, 165), (27, 186), (168,  28), (195, 149)], 
             [(62, 27), (77, 181), (157,  45), (98, 170), (128,  61)],
             [(22, 193), (46, 103), (138,  64), (103,  56), (167, 121), (35, 66), (137, 135)])
 
 def rider_driver_example_2():
     return (7, 5, 50, 
-            [43, 17, 30, 24, 13, 26, 7], 
+            [86, 34, 60, 48, 26, 52, 14], 
             [(24,  6), (12, 12), (1, 19), (36, 32), (38, 41), (3, 38), ( 5, 16)],
             [(4, 7), (24, 22), (17, 21), (21, 28), (31, 18), (37, 31), (24,  5)], 
             [(41, 11), (16, 38), (42, 49), (41, 40), (36, 42)])
@@ -77,7 +76,7 @@ def random_riders_drivers_stable_outcomes(n, m):
     GRID_SIZE, VALUE = 100
     rng = np.random.default_rng(SEED)
     ex_net = exchange_network_from_uber(n, m, GRID_SIZE, [VALUE] * n, rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (m, 2)))[2]
-    return stable_outcome(n, m ex_net)
+    return stable_outcome(n, m, ex_net)
 
 # === Bonus 3(a) (Optional) ===
 def public_transport_stable_outcome(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs, a, b):
@@ -125,63 +124,15 @@ def test_n_m(n: int, m: int):
     avg_price = np.average(prices)
     return NUMBER_OF_TESTS * avg_rider_profit, avg_rider_profit, np.std(rider_profit), min(rider_profit), max(rider_profit), NUMBER_OF_TESTS * avg_price, avg_price, np.std(prices), min(prices), max(prices)
 
-# plots for 10b, I leave that as optional.
-# def plot_surface(n_m, stats, title):
-#     N_INDX = 0
-#     M_INDX = 1
-#     n_values = sorted(set(n for n, m in n_m))
-#     m_values = sorted(set(m for n, m in n_m))
-
-#     T, K = np.meshgrid(n_values, m_values)
-#     Z = np.zeros(T.shape)
-
-#     for i in range(len(stats)):
-#         n_idx = n_values.index(n_m[i][N_INDX])
-#         m_idx = m_values.index(n_m[i][M_INDX])
-#         Z[m_idx, n_idx] = stats[i]
-
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111, projection='3d')
-#     surf = ax.plot_surface(T, K, Z, cmap='viridis')
-
-#     ax.set_xlabel('Number of riders')
-#     ax.set_ylabel('Number of drivers')
-#     ax.set_zlabel(title)
-
-#     fig.colorbar(surf)
-#     plt.title(title)
-#     plt.savefig(f'{title}.png')
-
-# def plot_heatmap(n_m, stats, title):
-#     N_INDX = 0
-#     M_INDX = 1
-#     n_values = sorted(set(n for n, m in n_m))
-#     m_values = sorted(set(m for n, m in n_m))
-
-#     Z = np.zeros((len(m_values), len(n_values)))
-
-#     for i in range(len(stats)):
-#         n_idx = n_values.index(n_m[i][N_INDX])
-#         m_idx = m_values.index(n_m[i][M_INDX])
-#         Z[m_idx, n_idx] = stats[i]
-
-#     plt.figure(figsize=(12, 8))
-#     sns.heatmap(Z, xticklabels=n_values, yticklabels=m_values, cmap='viridis', annot=True, fmt=".1f")
-#     plt.xlabel('Number of riders')
-#     plt.ylabel('Number of drivers')
-#     plt.title(title)
-#     plt.savefig(f"{title}.png")
-
-
 def main():
     # === Problem 10(a) === #
     print("=== Problem 10(a) === ")
 
     print(f"example1: {rider_driver_example_1()}")
-    print(f"example1 stable outcome: {stable_outcome(exchange_network_from_uber(*rider_driver_example_1()))}")
+    print(f"example1 stable outcome: {stable_outcome(*exchange_network_from_uber(*rider_driver_example_1()))}")
 
     print(f"example2: {rider_driver_example_2()}")
-    print(f"example2 stable outcome: {stable_outcome(exchange_network_from_uber(*rider_driver_example_2()))}")
+    print(f"example2 stable outcome: {stable_outcome(*exchange_network_from_uber(*rider_driver_example_2()))}")
     
 
     # === Problem 10(b) === #

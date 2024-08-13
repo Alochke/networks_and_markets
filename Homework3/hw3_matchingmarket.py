@@ -260,7 +260,7 @@ def max_matching(n, m, graph):
     matching = [None] * n
     for i in range(n):
         for j in range(m):
-            if flow_graph.get_edge(j +m ,i) > 0:  # Check if there's positive flow from buyer i to item j
+            if flow_graph.get_edge(j +n ,i) > 0:  # Check if there's positive flow from buyer i to item j
             #if in  the residual graph, in the max flow there is an edge from  j+m to i , then there is a match between
             # (i, j+m ) in ther graph !
                 matching[i] = j # you can do also j + m if you want so it will represent the graph more presicly
