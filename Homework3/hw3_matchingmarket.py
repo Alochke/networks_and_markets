@@ -378,9 +378,11 @@ def market_eq(n, m, V):
     graph = build_graph(right_side, left_side, V, P)
     M, _ = max_matching(right_side,left_side,graph)
 
-    if (right_side > left_side):
+    if (n > m):
+        #right_side = n
+        #left
         for i in range(n):
-            if M[i] >= n:
+            if M[i] >= m:
                 M[i] = None  #delete the imagenary matches of the imaginary items
 
 
