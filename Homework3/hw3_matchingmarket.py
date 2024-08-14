@@ -8,12 +8,10 @@
 
 # Do not include any other files or an external package, unless it is one of
 # [numpy, pandas, scipy, matplotlib, random]
-# please contact us before sumission if you want another package approved.
+# please contact us before submission if you want another package approved.
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
-
-
 
 
 class UndirectedGraph:
@@ -116,7 +114,6 @@ def build_graph(n, m, V, P):
     for i in range(n):
         graph.set_edge(source, i, 1)  # Each buyer can "buy" one item
 
- 
     # Connect each item to sink
     for j in range(m):
         graph.set_edge(n + j, sink, 1)  # Each item can be "sold" once
@@ -128,8 +125,6 @@ def build_graph(n, m, V, P):
             if V[i][j] - P[j] == max_utility:  # Connect only to items offering max utility
                 if (V[i][j] - P[j] == max_utility >= 0):
                     graph.set_edge(i, n + j, 1)  # Set edge capacity to 1
-
-
 
     return graph
 
@@ -154,7 +149,6 @@ def bfs_capacity(graph, source, sink, parent):
 
 
 def max_flow(graph, source, sink):
-
 
     parent = [-1] * graph.num_nodes  # Array to store the path
     max_flow = 0
@@ -200,8 +194,8 @@ def find_reachable_nodes(graph, source):
 
 def find_constricted_set(graph, source, rightSide):
     reachable = find_reachable_nodes(graph, source)
-    #print(reachable)
-    constircted_set =  [node for node in range(rightSide) if node in reachable and node != source]
+    # print(reachable)
+    constircted_set = [node for node in range(rightSide) if node in reachable and node != source]
     return constircted_set
 
 
@@ -236,10 +230,8 @@ def adjust_prices(graph, P, constricted_set, n):
     return P  # Return the updated price list for clarity
 
 
-
-
 def max_matching(n, m, graph):
-    """finds max matching from a bipartie  Prefferenced Choiced graph of n nodes (buyer) in right side
+    """finds max matching from a bipartite Preferred Choice graph of n nodes (buyer) in right side
     m nodes (items) in left side"""
  
     source = n+m
@@ -263,10 +255,8 @@ def max_matching(n, m, graph):
             if flow_graph.get_edge(j +n ,i) > 0:  # Check if there's positive flow from buyer i to item j
             #if in  the residual graph, in the max flow there is an edge from  j+m to i , then there is a match between
             # (i, j+m ) in ther graph !
-                matching[i] = j # you can do also j + m if you want so it will represent the graph more presicly
+                matching[i] = j # you can do also j + m if you want so it will represent the graph more precisely
                 break
-    
-
 
     return matching , flow_graph
 
@@ -275,7 +265,7 @@ def max_matching(n, m, graph):
 
 # === Problem 7(a) ===
 def matching_or_cset(n, C):
-    #first create graph
+    # first create graph
     num_nodes = n + n + 2  # +2 for source and sink
     graph = WeightedDirectedGraph(num_nodes)
     source = n + n  # Index of the source node
@@ -285,7 +275,6 @@ def matching_or_cset(n, C):
     for i in range(n):
         graph.set_edge(source, i, 1)  # Each buyer can "buy" one item
 
- 
     # Connect each item to sink
     for j in range(n):
         graph.set_edge(n + j, sink, 1)  # Each item can be "sold" once
@@ -295,28 +284,19 @@ def matching_or_cset(n, C):
             if C[i][j] != 0:  # Assuming non-zero entries indicate an edge
                 graph.set_edge(i, n+j, C[i][j])
 
-    M , residual_graph = max_matching(n = n, m = n, graph= graph)
+    M , residual_graph = max_matching(n=n, m=n, graph=graph)
 
     if (None in M):
-        constricted_set = find_constricted_set(graph = residual_graph, source= source, rightSide= n)
+        constricted_set = find_constricted_set(graph=residual_graph, source=source, rightSide=n)
         return (False,constricted_set)
     
     else:
         return (True,M)
 
-        
-
-
-
-
-
-
-
 
 # === Problem 7(b) ===
 
 def market_eq(n, m, V):
-
     """
     Finds market equilibrium for a matching market with n buyers and m items.
     
@@ -359,12 +339,9 @@ def market_eq(n, m, V):
         graph = build_graph(n=right_side, m=left_side , V=V, P=P)  # Function to build the initial graph based on valuations and prices
 
 
-        
-
-
     #graph.print_graph()
     while True:
-        max_flow_value, residual_graph = max_flow(graph,source, sink)
+        max_flow_value, residual_graph = max_flow(graph, source, sink)
         #(max_flow_value)
         #residual_graph.print_graph()
         if max_flow_value == right_side:  # Assuming supply equals demand exactly
@@ -391,10 +368,6 @@ def market_eq(n, m, V):
     return P, M
 
 
-
-
-
-
 # === Problem 8(b) ===
 def vcg(n, m, V):
     '''Given a matching market with n buyers, and m items, and
@@ -405,8 +378,17 @@ def vcg(n, m, V):
     P[j] should be positive for every j in 0...m-1. Note that P is
     still indexed by item, not by player!!
     '''
-    P = [0]*m
-    M = [0]*n
+    # P = [0]*m
+    # M = [0]*n
+
+    _, M = market_eq(n, m, V)
+    P = [0] * m
+    for i in range(n):
+        # get best matching without 𝑖
+        V_no_i = V[:i] + V[i+1:]
+        _, M_no_i = market_eq(n-1, m, V_no_i)
+        # update the price of item M[i] as the price buyer i should pay for the item it's matched to
+        P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1)) - sum(V[j][M[j]] for j in range(n) if j != i)
     return (P,M)
 
 
@@ -420,6 +402,7 @@ def random_bundles_valuations(n, m):
     V = [[0] * m for _ in range(n)]
     return (n,m,V)
 
+
 # === Bonus Question 2(b) (optional) ===
 def gsp(n, m, V):
     '''Given a matching market for bundles with n buyers, and m bundles, and
@@ -429,9 +412,10 @@ def gsp(n, m, V):
     M = [0]*n
     return (P,M)
 
+
 #Test for 7(a)
 def positive_test():
-        # Example connectivity matrix, change as needed for different scenarios
+    # Example connectivity matrix, change as needed for different scenarios
     C = [
         [0, 1, 0, 0],
         [0, 0, 1, 0],
@@ -450,7 +434,7 @@ def positive_test():
     print("Matching or Constricted Set: ", result[1])
 
 def negative_test():
-        # Example connectivity matrix where a perfect matching is not possible
+    # Example connectivity matrix where a perfect matching is not possible
     C = [
         [1, 1, 1, 1],
         [0, 1, 0, 0],
@@ -468,8 +452,7 @@ def negative_test():
     print("Is there a perfect matching? ", result[0])
     print("Matching or Constricted Set: ", result[1])
 
-def market_eq_qeustion2_test():
-        # Assuming the market_eq, max_matching, and find_constricted_set functions are already defined and available
+def question2_test():
 
     # Define the number of buyers and items
     n = 3  # number of buyers
@@ -490,21 +473,91 @@ def market_eq_qeustion2_test():
 
     ]
 
+    print("\nTesting on q.2:")
+    print("\nResults for the procedure constructed in Theorem 8.2:")
     # Run the market equilibrium algorithm
     P, M = market_eq(n, m, V2)
-  
 
-    # Output the results
     print("Prices for items x, y, z:", P)
     print("Matching result (buyer to item):", M)
+
+    print("\nResults for the VCG algorithm:")
+    # run the VCG algorithm
+    P, M = vcg(n, m, V2)
+    print("Prices for items x, y, z:", P)
+    print("Matching result (buyer to item):", M)
+    print("_____________________________________________________________________")
+
+
+def matching_to_string(M):
+    return ", ".join([f"M({i})={M[i]}" for i in range(len(M))])
+
+
+def prices_to_string(p):
+    return ", ".join([f"p({i})={p[i]}" for i in range(len(p))])
+
+
+def run_test(name, n, m, V):
+    print("\nTesting on " + name + ":")
+    print("\nResults for the procedure constructed in Theorem 8.2:")
+    P, M = market_eq(n, m, V)
+    print("Matching: ", matching_to_string(M))
+    print("Item prices: ", prices_to_string(P))
+    print("\nResults for the VCG algorithm:")
+    P, M = vcg(n, m, V)
+    print("Matching: ", matching_to_string(M))
+    print("Item prices: ", prices_to_string(P))
+    print("_____________________________________________________________________")
+
+
+def lec5_p7_test():
+    n = 3
+    m = 3
+
+    V = [
+        [4, 12, 5],
+        [7, 10, 9],
+        [7, 7, 10]
+    ]
+
+    run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V)
+
+
+def question1_test():
+    n = 2
+    m = 2
+
+    V = [
+        [2, 4],
+        [3, 6],
+    ]
+
+    run_test("q.1", n, m, V)
+
+
+def n_gt_m_test():
+    n = 3
+    m = 2
+
+    V = [
+        [4, 12],
+        [7, 10],
+        [7, 7]
+    ]
+
+    run_test("a matching market with n>m", n, m, V)
 
 
 def main():
     # TODO: Put your analysis and plotting code here, if any
-    print("hello world")
+    question2_test()
+    lec5_p7_test()
+    question1_test()
+    # n_gt_m_test()
+
 
 if __name__ == "__main__":
-   market_eq_qeustion2_test()
+    main()
 
 
 
