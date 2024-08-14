@@ -5,9 +5,6 @@
 # We will pass your grade through an autograder which expects a specific format.
 # =====================================
 
-SEED = 42
-NUMBER_OF_TESTS = 100
-
 
 # Do not include any other files or an external package, unless it is one of
 # [numpy, pandas, scipy, matplotlib, random]
@@ -15,6 +12,10 @@ NUMBER_OF_TESTS = 100
 import numpy as np
 import matplotlib.pyplot as plt
 from hw3_matchingmarket import market_eq
+
+SEED = 42
+NUMBER_OF_TESTS = 100
+RNG = np.random.default_rng(SEED)
 
 # === Problem 9(a) ===
 def exchange_network_from_uber(n, m, l, rider_vals, rider_locs, rider_dests, driver_locs):
@@ -51,7 +52,7 @@ def stable_outcome(n, m, V):
     -   A_drivers is an m-element list, where A_drivers[j] is the value
         allocated to driver j.'''
     A_drivers, M = market_eq(n, m, V) 
-    return (M, [V[i][M[i]] - A_drivers[M[i]] if M[i] else 0 for i in range(n)], A_drivers)
+    return (M, [V[i][M[i]] - A_drivers[M[i]] if (M[i] != None) else 0 for i in range(n)], A_drivers)
 
 # === Problem 10(a) ===
 def rider_driver_example_1():
@@ -73,9 +74,9 @@ def random_riders_drivers_stable_outcomes(n, m):
     '''Generates n riders, m drivers, each located randomly on the grid,
     with random destinations, each rider with a ride value of 100, 
     and returns the stable outcome.'''
-    GRID_SIZE, VALUE = 100
-    rng = np.random.default_rng(SEED)
-    ex_net = exchange_network_from_uber(n, m, GRID_SIZE, [VALUE] * n, rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (n, 2)), rng.choice(GRID_SIZE, size = (m, 2)))[2]
+    GRID_SIZE = 100
+    VALUE = 100
+    ex_net = exchange_network_from_uber(n, m, GRID_SIZE, [VALUE] * n, RNG.choice(GRID_SIZE, size = (n, 2)), RNG.choice(GRID_SIZE, size = (n, 2)), RNG.choice(GRID_SIZE, size = (m, 2)))[2]
     return stable_outcome(n, m, ex_net)
 
 # === Bonus 3(a) (Optional) ===
@@ -117,7 +118,7 @@ def test_n_m(n: int, m: int):
     rider_profit = []
     prices = []
     for i in range(NUMBER_OF_TESTS):
-        A_riders, A_drivers = random_riders_drivers_stable_outcomes(n, m)[1:2]
+        A_riders, A_drivers = random_riders_drivers_stable_outcomes(n, m)[1:3]
         rider_profit += A_riders
         prices += A_drivers
     avg_rider_profit = np.average(rider_profit)
@@ -126,13 +127,13 @@ def test_n_m(n: int, m: int):
 
 def main():
     # === Problem 10(a) === #
-    print("=== Problem 10(a) === ")
+    print("=== Problem 10(a) ===\n")
 
-    print(f"example1: {rider_driver_example_1()}")
-    print(f"example1 stable outcome: {stable_outcome(*exchange_network_from_uber(*rider_driver_example_1()))}")
+    print(f"example1:\n{rider_driver_example_1()}")
+    print(f"example1 stable outcome:\n{stable_outcome(*exchange_network_from_uber(*rider_driver_example_1()))}\n")
 
-    print(f"example2: {rider_driver_example_2()}")
-    print(f"example2 stable outcome: {stable_outcome(*exchange_network_from_uber(*rider_driver_example_2()))}")
+    print(f"example2:\n{rider_driver_example_2()}")
+    print(f"example2 stable outcome:\n{stable_outcome(*exchange_network_from_uber(*rider_driver_example_2()))}")
     
 
     # === Problem 10(b) === #
@@ -173,7 +174,7 @@ def main():
               "Maximal price"]
     
     for i in range(len(client_nums)):
-        print(f"\nPrinting calculations for number of riders = {client_nums[i][N_INDX]}, number of drivers = {client_nums[i][M_INDX]}\n\n")
+        print(f"\nPrinting calculations for number of riders = {client_nums[i][N_INDX]}, number of drivers = {client_nums[i][M_INDX]}\n")
         
         for j in range(NUM_STATS):
             print(f"{stats_names[j]}: {stats[j][i]}")
