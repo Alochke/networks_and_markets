@@ -127,10 +127,10 @@ def test_n_m(n: int, m: int):
 
 def main():
     # === Problem 10(a) === #
-    print("=== Problem 10(a) === ")
+    print("=== Problem 10(a) ===\n")
 
     print(f"example1:\n{rider_driver_example_1()}")
-    print(f"example1 stable outcome:\n{stable_outcome(*exchange_network_from_uber(*rider_driver_example_1()))}")
+    print(f"example1 stable outcome:\n{stable_outcome(*exchange_network_from_uber(*rider_driver_example_1()))}\n")
 
     print(f"example2:\n{rider_driver_example_2()}")
     print(f"example2 stable outcome:\n{stable_outcome(*exchange_network_from_uber(*rider_driver_example_2()))}")
@@ -174,7 +174,7 @@ def main():
               "Maximal price"]
     
     for i in range(len(client_nums)):
-        print(f"\nPrinting calculations for number of riders = {client_nums[i][N_INDX]}, number of drivers = {client_nums[i][M_INDX]}\n\n")
+        print(f"\nPrinting calculations for number of riders = {client_nums[i][N_INDX]}, number of drivers = {client_nums[i][M_INDX]}\n")
         
         for j in range(NUM_STATS):
             print(f"{stats_names[j]}: {stats[j][i]}")
