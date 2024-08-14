@@ -260,7 +260,7 @@ def max_matching(n, m, graph):
     matching = [None] * n
     for i in range(n):
         for j in range(m):
-            if flow_graph.get_edge(j +m ,i) > 0:  # Check if there's positive flow from buyer i to item j
+            if flow_graph.get_edge(j +n ,i) > 0:  # Check if there's positive flow from buyer i to item j
             #if in  the residual graph, in the max flow there is an edge from  j+m to i , then there is a match between
             # (i, j+m ) in ther graph !
                 matching[i] = j # you can do also j + m if you want so it will represent the graph more presicly
@@ -316,6 +316,7 @@ def matching_or_cset(n, C):
 # === Problem 7(b) ===
 
 def market_eq(n, m, V):
+
     """
     Finds market equilibrium for a matching market with n buyers and m items.
     
@@ -327,26 +328,63 @@ def market_eq(n, m, V):
     tuple: A tuple (P, M) of prices P and a matching M where P[j] is the price of item j,
            and M[i] = j if buyer i is matched with item j, M[i] = None if no matching for buyer i.
     """
+
+
     # Initial setup
+
+  
     P = [0] * m  # Initial prices are set to 0 for all items.
-    graph = build_graph(n, m, V, P)  # Function to build the initial graph based on valuations and prices
-    source = n+m
-    sink = n+m+1
+
+    if (n <=m):
+        
+        source = n+m
+        sink = n+m+1
+        right_side = n
+        left_side = m
+        graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Function to build the initial graph based on valuations and prices
+
+    else:
+        # n > m
+        #update V in all
+        for i in range(n-m):
+            for buyer in V:
+                buyer.append(0)
+            
+            P.append(0)
+        source = n + n
+        sink = n + n + 1
+        #now n = m
+        right_side = n
+        left_side = n
+        graph = build_graph(n=right_side, m=left_side , V=V, P=P)  # Function to build the initial graph based on valuations and prices
+
+
+        
+
+
     #graph.print_graph()
     while True:
         max_flow_value, residual_graph = max_flow(graph,source, sink)
         #(max_flow_value)
         #residual_graph.print_graph()
-        if max_flow_value == n:  # Assuming supply equals demand exactly
+        if max_flow_value == right_side:  # Assuming supply equals demand exactly
             break  # We found a perfect matching, hence market equilibrium
-        constricted_set = find_constricted_set(residual_graph, source, n)
+        constricted_set = find_constricted_set(graph=residual_graph, source=source, rightSide=n)
 
         adjust_prices(residual_graph,P,constricted_set,n)  # Function to adjust prices based on the constricted set
-        graph = build_graph(n, m, V, P)  # Rebuild the graph with updated prices
+        graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Rebuild the graph with updated prices
 
 
-    graph = build_graph(n, m, V, P)
-    M, _ = max_matching(n,m,graph)
+    graph = build_graph(right_side, left_side, V, P)
+    M, _ = max_matching(right_side,left_side,graph)
+
+    if (right_side > left_side):
+        for i in range(n):
+            if M[i] >= n:
+                M[i] = None  #delete the imagenary matches of the imaginary items
+
+
+        P = P[:m] # delete the imagenary prices of the imaginary items
 
     return P, M
 
