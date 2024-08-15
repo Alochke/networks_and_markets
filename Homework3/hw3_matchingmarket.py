@@ -13,6 +13,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
 
+SEED = 42
+RNG = np.random.default_rng(SEED)
+
 
 class UndirectedGraph:
     def __init__(self, number_of_nodes):
@@ -697,6 +700,14 @@ def n_gt_m_test():
 
     run_test("a matching market with n>m", n, m, V)
 
+def random_test_a():
+    n = RNG.choice(40)
+    m = RNG.choice(40)
+
+    V = [[RNG.choice(40) for i in range(m)] for j in range(n)]
+
+    run_test("a matching market with random parameters", n, m, V)
+
 
 def main():
     question2_test()
@@ -704,6 +715,7 @@ def main():
     question1_test()
     n_gt_m_test()
     random_test()
+    random_test_a()
     # bonus questions
     run_vcg_on_random_bundles_valuations()
     run_vcg_on_random_bundles_valuations_sorted()
