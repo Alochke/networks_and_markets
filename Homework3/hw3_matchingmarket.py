@@ -411,6 +411,7 @@ def gsp(n, m, V):
     matching M as computed using GSP.'''
     P = [0]*m
     M = [0]*n
+
     return (P,M)
 
 
