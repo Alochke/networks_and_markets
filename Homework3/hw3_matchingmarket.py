@@ -383,13 +383,14 @@ def vcg(n, m, V):
 
     _, M = market_eq(n, m, V)
     P = [0] * m
+    SV_M = sum(V[j][M[j]] for j in range(n) if M[j] is not None)
     for i in range(n):
         # get best matching without 𝑖
         V_no_i = V[:i] + V[i+1:]
         _, M_no_i = market_eq(n-1, m, V_no_i)
         # update the price of item M[i] as the price buyer i should pay for the item it's matched to
         if M[i] is not None:
-            P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1) if M_no_i[j] is not None) - sum(V[j][M[j]] for j in range(n) if j != i and M[j] is not None)
+            P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1) if M_no_i[j] is not None) - (SV_M - V[i][M[i]])
     return (P,M)
 
 
@@ -401,7 +402,68 @@ def random_bundles_valuations(n, m):
     Each player i has its own value for an individual good; this value is sampled
     uniformly at random from [1, 50] inclusive, for each player'''
     V = [[0] * m for _ in range(n)]
+
+    # Generate random valuations
+    for i in range(n):
+        # Sample a random value for the good for buyer i
+        value_per_good = np.random.randint(1, 51)
+        for j in range(m):
+            # The valuation for bundle j is value_per_good multiplied by j
+            V[i][j] = value_per_good * j
+
     return (n,m,V)
+
+
+def run_vcg_on_random_bundles_valuations():
+    n, m, V = random_bundles_valuations(20, 20)
+    P, M = vcg(n, m, V)
+    print("\nBonus 2(a), random bundles valuations:")
+    print("Buyers value per good: ", prices_to_string([V[i][1] for i in range(n)]))
+    print("Matching: ", matching_to_string(M))
+    print("Item prices: ", prices_to_string(P))
+    print("_____________________________________________________________________")
+
+
+def random_bundles_valuations_sorted(n, m):
+    '''Given n buyers, m bundles, generate a matching market context
+    (n, m, V) where V[i][j] is buyer i's valuation for bundle j.
+    Each bundle j (in 0...m-1) is comprised of j copies of an identical good.
+    Each player i has its own value for an individual good; this value is sampled
+    uniformly at random from [1, 50] inclusive, for each player.
+    The buyers are sorted in ascending order by their value per good
+    s.t buyer n has the highest value per good.'''
+
+    # Generate random values per good for each buyer
+    values_per_good = np.random.randint(1, 51, size=n)
+    sorted_values_per_good = sorted(values_per_good)
+
+    # Initialize and assign valuations matrix V based on sorted values per good
+    V = [[0] * m for _ in range(n)]
+    for i in range(n):
+        for j in range(m):
+            # The valuation for bundle j is value_per_good multiplied by j
+            V[i][j] = sorted_values_per_good[i] * j
+
+    return (n,m,V)
+
+
+def run_vcg_on_random_bundles_valuations_sorted():
+    n, m, V = random_bundles_valuations_sorted(20, 20)
+    P, M = vcg(n, m, V)
+    print("\nBonus 2(a), random bundles valuations (sorted):")
+    print("Buyers are sorted in the ascending order of their value per good.")
+    print("Buyers value per good: ", prices_to_string([V[i][1] for i in range(n)]))
+    print("Matching: ", matching_to_string(M))
+    print("Item prices: ", prices_to_string(P))
+    externality_p = [0] * m
+    for i in range(n):
+        # if i doesn't play, each player j s.t j<i (ascending order) will be assigned a bundle that is bigger by 1 item
+        # V[j][1] is the valuation of buyer j for 1 good
+        externality_p[i] = sum(V[j][1] for j in range(i))
+    print("Externality prices: ", prices_to_string(externality_p))
+    print("Price of bundle divided by the number of items in the bundle:")
+    print([f"{P[j]/j:.2f}" for j in range(1, m)])       # p(y_j)/c_j)
+    print("_____________________________________________________________________")
 
 
 # === Bonus Question 2(b) (optional) ===
@@ -410,9 +472,65 @@ def gsp(n, m, V):
     valuations V (for bundles), output a tuple (P, M) of prices P and a 
     matching M as computed using GSP.'''
     P = [0]*m
-    M = [0]*n
+    _, M = market_eq(n, m, V)
 
-    return (P,M)
+    # Extract the valuations for bundle 1 (value per 1 good)
+    valuations = [V[i][1] for i in range(n)]
+
+    # Get the indices that would sort the valuations in ascending order
+    sorted_indices = np.argsort(valuations)
+
+    # Reorder the player indices based on the sorted order
+    sorted_V = [V[i] for i in sorted_indices]
+    P[0] = 0
+
+    for i in range(1, n):
+        P[i] = i * sorted_V[i-1][1]  # Use sorted valuations to set prices
+        # "next lower bid" = "second price" (bids sorted in ascending order)
+
+    # Translate to original buyer indices
+    # Map the prices back to original indices
+    original_indices = np.argsort(sorted_indices)  # Reverse mapping to original indices
+
+    P_original = [0] * n
+    for idx, orig_idx in enumerate(original_indices):
+        P_original[orig_idx] = P[idx]
+
+    return (P_original,M)
+
+
+def compare_vcg_gsp(n, m, V):
+    P_vcg, M_vcg = vcg(n, m, V)
+    P_gsp, M_gsp = gsp(n, m, V)
+    print("Buyers value per good: ", [int(V[i][1]) for i in range(n)])
+    print("VCG:")
+    print("Matching: ", M_vcg)
+    print("Item prices: ")
+    print_floats_list(P_vcg)
+    print("GSP:")
+    print("Matching: ", M_gsp)
+    print("Item prices: ")
+    print_floats_list(P_gsp)
+    print("Item prices GSP - VCG: ")
+    print_floats_list([P_gsp[i] - P_vcg[i] for i in range(m)])
+    print("_____________________________________________________________________")
+
+
+def compare_vcg_gsp_on_random_bundles():
+    n, m, V = random_bundles_valuations_sorted(20, 20)
+    print("\nBonus 2(b), VCG and GSP comparison for random bundles valuations (sorted):")
+    print("Buyers are sorted in the ascending order of their value per good.")
+    compare_vcg_gsp(n, m, V)
+
+
+def compare_vcg_gsp_on_constant_bundles():
+    n = 20
+    m = 20
+    c = 2   # constant price of c per good for all players
+    V = [[c*i for i in range(m)] for _ in range(n)]
+    print("\nBonus 2(b), VCG and GSP comparison for bundles with constant valuations:")
+
+    compare_vcg_gsp(n, m, V)
 
 
 #Test for 7(a)
@@ -498,18 +616,29 @@ def matching_to_string(M):
 def prices_to_string(p):
     return ", ".join([f"p({i})={p[i]}" for i in range(len(p))])
 
+def print_floats_list(float_list, decimals=2):
+    formatted_floats = [f"{num:.{decimals}f}" for num in float_list]
+    print("[" + ", ".join(formatted_floats) + "]")
+
+def are_identical_lists(list1, list2):
+    return len(list1) == len(list2) and all(x == y for x, y in zip(list1, list2))
+
 
 def run_test(name, n, m, V):
     print("\nTesting on " + name + ":")
     print("\nResults for the procedure constructed in Theorem 8.2:")
-    P, M = market_eq(n, m, V)
-    print("Matching: ", matching_to_string(M))
-    print("Item prices: ", prices_to_string(P))
+    P_8_2, M_8_2 = market_eq(n, m, V)
+    print("Matching: ", matching_to_string(M_8_2))
+    print("Item prices: ", prices_to_string(P_8_2))
     print("\nResults for the VCG algorithm:")
-    P, M = vcg(n, m, V)
-    print("Matching: ", matching_to_string(M))
-    print("Item prices: ", prices_to_string(P))
+    P_vcg, M_vcg = vcg(n, m, V)
+    print("Matching: ", matching_to_string(M_vcg))
+    print("Item prices: ", prices_to_string(P_vcg))
     print("_____________________________________________________________________")
+    if are_identical_lists(M_8_2, M_vcg) and are_identical_lists(P_8_2, P_vcg):
+        return True
+    print("******")
+    return False
 
 
 def lec5_p7_test():
@@ -537,6 +666,25 @@ def question1_test():
     run_test("q.1", n, m, V)
 
 
+def random_test():
+    no_runs = 100
+    n = 20
+    m = 20
+
+    identical_results_counter = 0
+
+    for _ in range(no_runs):
+        V = [[0] * m for _ in range(n)]
+        for i in range(n):
+            for j in range(m):
+                V[i][j] = np.random.randint(1, 51)
+
+        iden = run_test("random", n, m, V)
+        identical_results_counter += iden
+    print(f"Identical results in {no_runs} runs: {identical_results_counter}")
+
+
+
 def n_gt_m_test():
     n = 3
     m = 2
@@ -551,11 +699,16 @@ def n_gt_m_test():
 
 
 def main():
-    # TODO: Put your analysis and plotting code here, if any
     question2_test()
     lec5_p7_test()
     question1_test()
     n_gt_m_test()
+    random_test()
+    # bonus questions
+    run_vcg_on_random_bundles_valuations()
+    run_vcg_on_random_bundles_valuations_sorted()
+    compare_vcg_gsp_on_random_bundles()
+    compare_vcg_gsp_on_constant_bundles()
 
 
 if __name__ == "__main__":
