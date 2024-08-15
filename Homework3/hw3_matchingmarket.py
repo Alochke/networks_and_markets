@@ -388,7 +388,8 @@ def vcg(n, m, V):
         V_no_i = V[:i] + V[i+1:]
         _, M_no_i = market_eq(n-1, m, V_no_i)
         # update the price of item M[i] as the price buyer i should pay for the item it's matched to
-        P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1)) - sum(V[j][M[j]] for j in range(n) if j != i)
+        if M[i] is not None:
+            P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1) if M_no_i[j] is not None) - sum(V[j][M[j]] for j in range(n) if j != i and M[j] is not None)
     return (P,M)
 
 
@@ -553,7 +554,7 @@ def main():
     question2_test()
     lec5_p7_test()
     question1_test()
-    # n_gt_m_test()
+    n_gt_m_test()
 
 
 if __name__ == "__main__":
