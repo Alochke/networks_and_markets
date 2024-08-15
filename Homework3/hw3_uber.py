@@ -116,14 +116,18 @@ def test_n_m(n: int, m: int):
         - Maximum price in all tests (int)
     """
     rider_profit = []
+    driver_value = []
+    rider_value = []
     prices = []
     for i in range(NUMBER_OF_TESTS):
-        A_riders, A_drivers = random_riders_drivers_stable_outcomes(n, m)[1:3]
+        M, A_riders, A_drivers = random_riders_drivers_stable_outcomes(n, m)
         rider_profit += A_riders
-        prices += A_drivers
-    avg_rider_profit = np.average(rider_profit)
-    avg_price = np.average(prices)
-    return NUMBER_OF_TESTS * avg_rider_profit, avg_rider_profit, np.std(rider_profit), min(rider_profit), max(rider_profit), NUMBER_OF_TESTS * avg_price, avg_price, np.std(prices), min(prices), max(prices)
+        driver_value.append(sum(A_drivers))
+        rider_value.append(sum(A_riders))
+        for i in range(len(A_drivers)):
+            if any([j == i for j in M]):
+                prices.append(A_drivers[i])
+    return np.average(rider_value), np.average(rider_profit), np.std(rider_profit), min(rider_profit), max(rider_profit), np.average(driver_value), np.average(prices), np.std(prices), min(prices), max(prices)
 
 def main():
     # === Problem 10(a) === #
