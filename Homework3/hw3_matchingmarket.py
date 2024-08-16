@@ -255,9 +255,9 @@ def max_matching(n, m, graph):
     matching = [None] * n
     for i in range(n):
         for j in range(m):
-            if flow_graph.get_edge(j +n ,i) > 0:  # Check if there's positive flow from buyer i to item j
-            #if in  the residual graph, in the max flow there is an edge from  j+m to i , then there is a match between
-            # (i, j+m ) in ther graph !
+            if flow_graph.get_edge(j + n, i) > 0:  # Check if there's positive flow from buyer i to item j
+            # if in the residual graph, in the max flow there is an edge from  j+m to i , then there is a match between
+            # (i, j+m ) in the graph !
                 matching[i] = j # you can do also j + m if you want so it will represent the graph more precisely
                 break
 
@@ -269,7 +269,7 @@ def max_matching(n, m, graph):
 # === Problem 7(a) ===
 def matching_or_cset(n, C):
     # first create graph
-    num_nodes = n + n + 2  # +2 for source and sink
+    num_nodes = n + n + 2   # +2 for source and sink
     graph = WeightedDirectedGraph(num_nodes)
     source = n + n  # Index of the source node
     sink = n + n + 1  # Index of the sink node
@@ -335,7 +335,7 @@ def market_eq(n, m, V):
         #now n = m
         right_side = n
         left_side = n
-        graph = build_graph(n=right_side, m=left_side , V=V, P=P)  # Function to build the initial graph based on valuations and prices
+        graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Function to build the initial graph based on valuations and prices
     else:
         # m > n
         for i in range(m - n):
@@ -344,32 +344,32 @@ def market_eq(n, m, V):
         sink = 2 * m + 1
         right_side = m
         left_side = m
-        graph = build_graph(n =m, m = m, V= V, P= P)
+        graph = build_graph(n=m, m=m, V=V, P=P)
 
 
-    #graph.print_graph()
+    # graph.print_graph()
     while True:
         max_flow_value, residual_graph = max_flow(graph, source, sink)
-        #(max_flow_value)
-        #residual_graph.print_graph()
+        # (max_flow_value)
+        # residual_graph.print_graph()
         if max_flow_value == right_side:  # Assuming supply equals demand exactly
             break  # We found a perfect matching, hence market equilibrium
         constricted_set = find_constricted_set(graph=residual_graph, source=source, right_side=right_side)
 
-        adjust_prices(residual_graph,P,constricted_set,right_side)  # Function to adjust prices based on the constricted set
+        adjust_prices(residual_graph, P, constricted_set, right_side)  # Function to adjust prices based on the constricted set
         graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Rebuild the graph with updated prices
 
 
     graph = build_graph(right_side, left_side, V, P)
-    M, _ = max_matching(right_side,left_side,graph)
+    M, _ = max_matching(right_side, left_side, graph)
 
     if (n > m):
-        #right_side = n
-        #left
+        # right_side = n
+        # left
         for i in range(n):
             if M[i] >= m:
-                M[i] = None  #delete the imagenary matches of the imaginary items
-        P = P[:m] # delete the imagenary prices of the imaginary items
+                M[i] = None  # delete the imaginary matches of the imaginary items
+        P = P[:m]   # delete the imaginary prices of the imaginary items
     elif (m > n):
        M = M[:n]
 
@@ -538,7 +538,7 @@ def compare_vcg_gsp_on_random_bundles():
 def compare_vcg_gsp_on_constant_bundles():
     n = 20
     m = 20
-    c = 2   # constant price of c per good for all players
+    c = 100   # constant price of c per good for all players
     V = [[c*i for i in range(m)] for _ in range(n)]
     print("\nBonus 2(b), VCG and GSP comparison for bundles with constant valuations:")
 
@@ -585,6 +585,7 @@ def run_test(name, n, m, V, verbose=True, print_V=False):
     print("****** 8.2 and VCG disagree ******")
     return False
 
+
 def question2_test():
 
     # Define the number of buyers and items
@@ -624,10 +625,10 @@ def lec5_p7_test():
     run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V)
 
 
-def random_test(n, m, no_runs=100):
+def random_test(n, m, num_runs=100):
     identical_results_counter = 0
 
-    for k in range(no_runs):
+    for k in range(num_runs):
         V = [[0] * m for _ in range(n)]
         for i in range(n):
             for j in range(m):
@@ -635,7 +636,7 @@ def random_test(n, m, no_runs=100):
 
         verbose = False if k < 98 else True
         identical_results_counter += run_test(f"a random context for n={n}, m={m}", n, m, V, verbose, verbose)
-    print(f"Identical results in {identical_results_counter} out of {no_runs} runs")
+    print(f"Identical results in {identical_results_counter} out of {num_runs} runs")
     print("_____________________________________________________________________")
 
 
@@ -654,6 +655,7 @@ def question1_test():
     ]
 
     run_test("q.1", n, m, V)
+
 
 def n_gt_m_test():
     n = 3
@@ -679,6 +681,7 @@ def new_test():
     ]
 
     run_test("a new matching market context", n, m, V, True, True)
+
 
 def n_lt_m_test():
     n = 2
