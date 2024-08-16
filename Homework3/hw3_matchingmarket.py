@@ -462,17 +462,19 @@ def run_vcg_on_random_bundles_valuations_sorted():
     P, M = vcg(n, m, V)
     print("\nBonus 2(a), random bundles valuations (sorted):")
     print("Buyers are sorted in the ascending order of their value per good.")
-    print("Buyers value per good: ", prices_to_string([V[i][1] for i in range(n)]))
-    print("Matching: ", matching_to_string(M))
-    print("Item prices: ", prices_to_string(P))
+    print("Buyers value per good: ", [int(V[i][1]) for i in range(n)])
+    print("Matching: ", M)
+    print("Item prices: ")
+    print_floats_list(P)
     externality_p = [0] * m
     for i in range(n):
         # if i doesn't play, each player j s.t j<i (ascending order) will be assigned a bundle that is bigger by 1 item
         # V[j][1] is the valuation of buyer j for 1 good
         externality_p[i] = sum(V[j][1] for j in range(i))
-    print("Externality prices: ", prices_to_string(externality_p))
+    print("Externality prices: ")
+    print_floats_list(externality_p)
     print("Price of bundle divided by the number of items in the bundle:")
-    print([f"{P[j]/j:.2f}" for j in range(1, m)])       # p(y_j)/c_j)
+    print_floats_list([P[j]/j for j in range(1, m)])       # p(y_j)/c_j)
     print("_____________________________________________________________________")
 
 
@@ -558,12 +560,16 @@ def are_identical_lists(list1, list2):
     return len(list1) == len(list2) and all(x == y for x, y in zip(list1, list2))
 
 
-def run_test(name, n, m, V, non_random):
-    # I don't want to print too much for random testing so I won't get too much non-intresting data.
+def run_test(name, n, m, V, verbose=True, print_V=False):
+    # avoid printing too much non-intresting data for random testing.
+
+    print("\nTesting on " + name + ":")
+    if(print_V):
+        print("Valuations: ", V)
+
     P_8_2, M_8_2 = market_eq(n, m, V)
     P_vcg, M_vcg = vcg(n, m, V)
-    if(non_random):
-        print("\nTesting on " + name + ":")
+    if(verbose):
         print("\nResults for the procedure constructed in Theorem 8.2:")
         print("Matching: ", matching_to_string(M_8_2))
         print("Item prices: ", prices_to_string(P_8_2))
@@ -574,9 +580,9 @@ def run_test(name, n, m, V, non_random):
         print(f"Avg price for market equilibrium algorithm: {np.average(P_8_2)}")
         print(f"Avg price for vcg: {np.average(P_vcg)}")
     print("_____________________________________________________________________")
-    print("******")
     if are_identical_lists(M_8_2, M_vcg) and are_identical_lists(P_8_2, P_vcg):
         return True
+    print("****** 8.2 and VCG disagree ******")
     return False
 
 def question2_test():
@@ -601,8 +607,8 @@ def question2_test():
 
     ]
 
-    run_test("q2.a", n, m, V, True)
-    run_test("q2.b", n, m, V2, True)
+    run_test("q2.a", n, m, V)
+    run_test("q2.b", n, m, V2)
 
 
 def lec5_p7_test():
@@ -615,24 +621,28 @@ def lec5_p7_test():
         [7, 7, 10]
     ]
 
-    run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V, True)
+    run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V)
 
 
-def random_test():
-    no_runs = 100
-    n = 3
-    m = 3
-
+def random_test(n, m, no_runs=100):
     identical_results_counter = 0
 
-    for _ in range(no_runs):
+    for k in range(no_runs):
         V = [[0] * m for _ in range(n)]
         for i in range(n):
             for j in range(m):
                 V[i][j] = np.random.randint(1, 51)
 
-        identical_results_counter += run_test("random", n, m, V, False)
-    print(f"Identical results in {no_runs} runs: {identical_results_counter}")
+        verbose = False if k < 98 else True
+        identical_results_counter += run_test(f"a random context for n={n}, m={m}", n, m, V, verbose, verbose)
+    print(f"Identical results in {identical_results_counter} out of {no_runs} runs")
+    print("_____________________________________________________________________")
+
+
+def run_random_test():
+    random_test(3, 3)
+    random_test(20, 20)
+
 
 def question1_test():
     n = 2
@@ -643,7 +653,7 @@ def question1_test():
         [3, 6],
     ]
 
-    run_test("q.1", n, m, V, True)
+    run_test("q.1", n, m, V)
 
 def n_gt_m_test():
     n = 3
@@ -655,7 +665,31 @@ def n_gt_m_test():
         [7, 7]
     ]
 
-    run_test("a matching market with n>m", n, m, V, True)
+    run_test("a matching market context with n>m", n, m, V, True, True)
+
+
+def new_test():
+    n = 3
+    m = 3
+
+    V = [
+        [3, 3, 10],
+        [36, 4, 24],
+        [33, 40, 47]
+    ]
+
+    run_test("a new matching market context", n, m, V, True, True)
+
+def n_lt_m_test():
+    n = 2
+    m = 3
+
+    V = [
+        [3, 3, 10],
+        [33, 40, 47]
+    ]
+
+    run_test("a matching market context with n<m", n, m, V, True, True)
 
 
 def main():
@@ -663,7 +697,9 @@ def main():
     lec5_p7_test()
     question1_test()
     n_gt_m_test()
-    random_test()
+    new_test()
+    n_lt_m_test()
+    run_random_test()
     # bonus questions
     run_vcg_on_random_bundles_valuations()
     run_vcg_on_random_bundles_valuations_sorted()
