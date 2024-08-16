@@ -586,17 +586,18 @@ def question2_test():
     m = 3  # number of items
 
     # Define the valuations matrix as given in the table
+
     V = [
-        [5, 2, 5],  # Valuations by buyer 'a'
-        [7, 3, 4],  # Valuations by buyer 'b'
-        [1, 1, 4]   # Valuations by buyer 'c'
+        [5, 7, 1],
+        [2, 3, 1],
+        [5, 4, 4]
 
     ]
 
     V2 = [
-        [5, 7, 1],
-        [2, 3, 1],
-        [5, 4, 4]
+        [5, 2, 5],  # Valuations by buyer 'a'
+        [7, 3, 4],  # Valuations by buyer 'b'
+        [1, 1, 4]   # Valuations by buyer 'c'
 
     ]
 
