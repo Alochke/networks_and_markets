@@ -195,10 +195,10 @@ def find_reachable_nodes(graph, source):
     return visited
 
 
-def find_constricted_set(graph, source, leftSide):
+def find_constricted_set(graph, source, right_side):
     reachable = find_reachable_nodes(graph, source)
     # print(reachable)
-    constircted_set = [node for node in range(leftSide) if node in reachable and node != source]
+    constircted_set = [node for node in range(right_side) if node in reachable and node != source]
     return constircted_set
 
 
@@ -354,9 +354,9 @@ def market_eq(n, m, V):
         #residual_graph.print_graph()
         if max_flow_value == right_side:  # Assuming supply equals demand exactly
             break  # We found a perfect matching, hence market equilibrium
-        constricted_set = find_constricted_set(graph=residual_graph, source=source, leftSide=left_side)
+        constricted_set = find_constricted_set(graph=residual_graph, source=source, right_side=right_side)
 
-        adjust_prices(residual_graph,P,constricted_set,left_side)  # Function to adjust prices based on the constricted set
+        adjust_prices(residual_graph,P,constricted_set,right_side)  # Function to adjust prices based on the constricted set
         graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Rebuild the graph with updated prices
 
 
