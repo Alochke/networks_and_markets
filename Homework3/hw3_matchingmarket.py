@@ -318,21 +318,17 @@ def market_eq(n, m, V):
   
     P = [0] * m  # Initial prices are set to 0 for all items.
 
-    if (n <=m):
-        
+    if (n == m):
         source = n+m
         sink = n+m+1
         right_side = n
         left_side = m
         graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Function to build the initial graph based on valuations and prices
-
-    else:
-        # n > m
+    elif (n > m):
         #update V in all
         for i in range(n-m):
             for buyer in V:
                 buyer.append(0)
-            
             P.append(0)
         source = n + n
         sink = n + n + 1
@@ -340,6 +336,14 @@ def market_eq(n, m, V):
         right_side = n
         left_side = n
         graph = build_graph(n=right_side, m=left_side , V=V, P=P)  # Function to build the initial graph based on valuations and prices
+    else:
+        for i in range(m - n):
+            V.append([0] * m)
+        source = 2 * m
+        sink = 2 * m + 1
+        right_side = m
+        left_side = m
+        graph = build_graph(n =m, m = m, V= V, P= P)
 
 
     #graph.print_graph()
@@ -394,6 +398,8 @@ def vcg(n, m, V):
         # update the price of item M[i] as the price buyer i should pay for the item it's matched to
         if M[i] is not None:
             P[M[i]] = sum(V_no_i[j][M_no_i[j]] for j in range(n-1) if M_no_i[j] is not None) - (SV_M - V[i][M[i]])
+            if P[M[i]] < 0:
+                print("hey")
     return (P,M)
 
 
@@ -536,44 +542,41 @@ def compare_vcg_gsp_on_constant_bundles():
     compare_vcg_gsp(n, m, V)
 
 
-#Test for 7(a)
-def positive_test():
-    # Example connectivity matrix, change as needed for different scenarios
-    C = [
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
-        [1, 0, 0, 0]
-    ]
+def matching_to_string(M):
+    return ", ".join([f"M({i})={M[i]}" for i in range(len(M))])
 
-    # Number of vertices in each part of the bipartite graph
-    n = 4
 
-    # Assuming matching_or_cset and other required functions are defined and ready to use
-    result = matching_or_cset(n, C)
+def prices_to_string(p):
+    return ", ".join([f"p({i})={p[i]}" for i in range(len(p))])
 
-    # Output the results
-    print("Is there a perfect matching? ", result[0])
-    print("Matching or Constricted Set: ", result[1])
+def print_floats_list(float_list, decimals=2):
+    formatted_floats = [f"{num:.{decimals}f}" for num in float_list]
+    print("[" + ", ".join(formatted_floats) + "]")
 
-def negative_test():
-    # Example connectivity matrix where a perfect matching is not possible
-    C = [
-        [1, 1, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 0],
-        [1, 1, 1, 1]
-    ]
+def are_identical_lists(list1, list2):
+    return len(list1) == len(list2) and all(x == y for x, y in zip(list1, list2))
 
-    # Number of vertices in each part of the bipartite graph
-    n = 4
 
-    # Assuming matching_or_cset and other required functions are defined and ready to use
-    result = matching_or_cset(n, C)
-
-    # Output the results
-    print("Is there a perfect matching? ", result[0])
-    print("Matching or Constricted Set: ", result[1])
+def run_test(name, n, m, V, non_random):
+    # I don't want to print too much for random testing so I won't get too much non-intresting data.
+    P_8_2, M_8_2 = market_eq(n, m, V)
+    P_vcg, M_vcg = vcg(n, m, V)
+    if(non_random):
+        print("\nTesting on " + name + ":")
+        print("\nResults for the procedure constructed in Theorem 8.2:")
+        print("Matching: ", matching_to_string(M_8_2))
+        print("Item prices: ", prices_to_string(P_8_2))
+        print("\nResults for the VCG algorithm:")
+        print("Matching: ", matching_to_string(M_vcg))
+        print("Item prices: ", prices_to_string(P_vcg))
+    else:
+        print(f"Avg price for market equilibrium algorithm: {np.average(P_8_2)}")
+        print(f"Avg price for vcg: {np.average(P_vcg)}")
+    print("_____________________________________________________________________")
+    print("******")
+    if are_identical_lists(M_8_2, M_vcg) and are_identical_lists(P_8_2, P_vcg):
+        return True
+    return False
 
 def question2_test():
 
@@ -596,52 +599,8 @@ def question2_test():
 
     ]
 
-    print("\nTesting on q.2:")
-    print("\nResults for the procedure constructed in Theorem 8.2:")
-    # Run the market equilibrium algorithm
-    P, M = market_eq(n, m, V2)
-
-    print("Prices for items x, y, z:", P)
-    print("Matching result (buyer to item):", M)
-
-    print("\nResults for the VCG algorithm:")
-    # run the VCG algorithm
-    P, M = vcg(n, m, V2)
-    print("Prices for items x, y, z:", P)
-    print("Matching result (buyer to item):", M)
-    print("_____________________________________________________________________")
-
-
-def matching_to_string(M):
-    return ", ".join([f"M({i})={M[i]}" for i in range(len(M))])
-
-
-def prices_to_string(p):
-    return ", ".join([f"p({i})={p[i]}" for i in range(len(p))])
-
-def print_floats_list(float_list, decimals=2):
-    formatted_floats = [f"{num:.{decimals}f}" for num in float_list]
-    print("[" + ", ".join(formatted_floats) + "]")
-
-def are_identical_lists(list1, list2):
-    return len(list1) == len(list2) and all(x == y for x, y in zip(list1, list2))
-
-
-def run_test(name, n, m, V):
-    print("\nTesting on " + name + ":")
-    print("\nResults for the procedure constructed in Theorem 8.2:")
-    P_8_2, M_8_2 = market_eq(n, m, V)
-    print("Matching: ", matching_to_string(M_8_2))
-    print("Item prices: ", prices_to_string(P_8_2))
-    print("\nResults for the VCG algorithm:")
-    P_vcg, M_vcg = vcg(n, m, V)
-    print("Matching: ", matching_to_string(M_vcg))
-    print("Item prices: ", prices_to_string(P_vcg))
-    print("_____________________________________________________________________")
-    if are_identical_lists(M_8_2, M_vcg) and are_identical_lists(P_8_2, P_vcg):
-        return True
-    print("******")
-    return False
+    run_test("q.2a", n, m, V, True)
+    run_test("q2.b", n, m, V2, True)
 
 
 def lec5_p7_test():
@@ -654,8 +613,24 @@ def lec5_p7_test():
         [7, 7, 10]
     ]
 
-    run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V)
+    run_test("the matching market frame with values as described in Lecture 5 Page 7", n, m, V, True)
 
+
+def random_test():
+    no_runs = 100
+    n = 3
+    m = 3
+
+    identical_results_counter = 0
+
+    for _ in range(no_runs):
+        V = [[0] * m for _ in range(n)]
+        for i in range(n):
+            for j in range(m):
+                V[i][j] = np.random.randint(1, 51)
+
+        identical_results_counter += run_test("random", n, m, V, False)
+    print(f"Identical results in {no_runs} runs: {identical_results_counter}")
 
 def question1_test():
     n = 2
@@ -666,27 +641,7 @@ def question1_test():
         [3, 6],
     ]
 
-    run_test("q.1", n, m, V)
-
-
-def random_test():
-    no_runs = 100
-    n = 20
-    m = 20
-
-    identical_results_counter = 0
-
-    for _ in range(no_runs):
-        V = [[0] * m for _ in range(n)]
-        for i in range(n):
-            for j in range(m):
-                V[i][j] = np.random.randint(1, 51)
-
-        iden = run_test("random", n, m, V)
-        identical_results_counter += iden
-    print(f"Identical results in {no_runs} runs: {identical_results_counter}")
-
-
+    run_test("q.1", n, m, V, True)
 
 def n_gt_m_test():
     n = 3
@@ -698,15 +653,7 @@ def n_gt_m_test():
         [7, 7]
     ]
 
-    run_test("a matching market with n>m", n, m, V)
-
-def random_test_a():
-    n = RNG.choice(40)
-    m = RNG.choice(40)
-
-    V = [[RNG.choice(40) for i in range(m)] for j in range(n)]
-
-    run_test("a matching market with random parameters", n, m, V)
+    run_test("a matching market with n>m", n, m, V, True)
 
 
 def main():
@@ -715,7 +662,6 @@ def main():
     question1_test()
     n_gt_m_test()
     random_test()
-    random_test_a()
     # bonus questions
     run_vcg_on_random_bundles_valuations()
     run_vcg_on_random_bundles_valuations_sorted()
