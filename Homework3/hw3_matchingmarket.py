@@ -290,7 +290,7 @@ def matching_or_cset(n, C):
     M , residual_graph = max_matching(n=n, m=n, graph=graph)
 
     if (None in M):
-        constricted_set = find_constricted_set(graph=residual_graph, source=source, rightSide=n)
+        constricted_set = find_constricted_set(graph=residual_graph, source=source, right_side=n)
         return (False,constricted_set)
     
     else:
