@@ -195,10 +195,10 @@ def find_reachable_nodes(graph, source):
     return visited
 
 
-def find_constricted_set(graph, source, rightSide):
+def find_constricted_set(graph, source, leftSide):
     reachable = find_reachable_nodes(graph, source)
     # print(reachable)
-    constircted_set = [node for node in range(rightSide) if node in reachable and node != source]
+    constircted_set = [node for node in range(leftSide) if node in reachable and node != source]
     return constircted_set
 
 
@@ -337,6 +337,7 @@ def market_eq(n, m, V):
         left_side = n
         graph = build_graph(n=right_side, m=left_side , V=V, P=P)  # Function to build the initial graph based on valuations and prices
     else:
+        # m > n
         for i in range(m - n):
             V.append([0] * m)
         source = 2 * m
@@ -353,9 +354,9 @@ def market_eq(n, m, V):
         #residual_graph.print_graph()
         if max_flow_value == right_side:  # Assuming supply equals demand exactly
             break  # We found a perfect matching, hence market equilibrium
-        constricted_set = find_constricted_set(graph=residual_graph, source=source, rightSide=n)
+        constricted_set = find_constricted_set(graph=residual_graph, source=source, leftSide=left_side)
 
-        adjust_prices(residual_graph,P,constricted_set,n)  # Function to adjust prices based on the constricted set
+        adjust_prices(residual_graph,P,constricted_set,left_side)  # Function to adjust prices based on the constricted set
         graph = build_graph(n=right_side, m=left_side, V=V, P=P)  # Rebuild the graph with updated prices
 
 
@@ -368,9 +369,9 @@ def market_eq(n, m, V):
         for i in range(n):
             if M[i] >= m:
                 M[i] = None  #delete the imagenary matches of the imaginary items
-
-
         P = P[:m] # delete the imagenary prices of the imaginary items
+    elif (m > n):
+       M = M[:n]
 
     return P, M
 
@@ -599,7 +600,7 @@ def question2_test():
 
     ]
 
-    run_test("q.2a", n, m, V, True)
+    run_test("q2.a", n, m, V, True)
     run_test("q2.b", n, m, V2, True)
 
 
