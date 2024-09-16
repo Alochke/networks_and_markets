@@ -2,7 +2,8 @@ import numpy as np
 import os
 import numpy as np
 from typing import Union
-
+import matplotlib.pyplot as plt
+import pandas as pd
 ##########################################################################################
 class DirectedGraph:
     def __init__(self, number_of_nodes, wheighted: bool):
@@ -10,7 +11,7 @@ class DirectedGraph:
     
     def add_edge(self, origin_node, destination_node, weight = True):
         '''Adds an edge from origin_node to destination_node.'''
-        self.add_edge[origin_node][destination_node] = weight
+        self.adj_matrix[origin_node][destination_node] = weight
     
     def edges_from(self, origin_node):
         ''' Returns a one-dimentional np array of all the nodes destination_node such that there is
@@ -267,10 +268,91 @@ def question_8_section_b(iterations = 20, save_visualization = False):
 
 # If this function is to be part of a larger script, it should ideally be called within a main block:
 
+#loading graphs in part 6
+######################################################################################
+def create_graph_from_dataframe(df, subreddit_to_number, weighted=False):
+    '''
+    Convert subreddit names to numbers and create a graph based on a DataFrame.
+    
+    Parameters:
+        df (pd.DataFrame): DataFrame with columns 'SOURCE_SUBREDDIT' and 'TARGET_SUBREDDIT'.
+        subreddit_to_number (dict): Mapping from subreddit names to numbers.
+        weighted (bool): If True, the graph will consider weights; otherwise, it will use binary connections.
+
+    Returns:
+        DirectedGraph: The graph constructed from the DataFrame.
+    '''
+    # Convert subreddit names to numbers
+
+    df['source_number'] = df['SOURCE_SUBREDDIT'].map(subreddit_to_number)
+    df['target_number'] = df['TARGET_SUBREDDIT'].map(subreddit_to_number)
+   
+    # Initialize the graph
+    graph = DirectedGraph(len(subreddit_to_number), weighted)
+
+    # Add edges to the graph
+    for _, row in df.iterrows():
+        graph.add_edge(row['source_number'], row['target_number'])
+
+    return graph
+
+
+
+#test for existing edges in graph, might delete later
+def check_edge_existence(graph, subreddit_to_number, pairs):
+    results = {}
+    for source, target in pairs:
+        source_number = subreddit_to_number.get(source)
+        target_number = subreddit_to_number.get(target)
+        if source_number is None or target_number is None:
+            results[(source, target)] = 'One or both subreddits not in map'
+        else:
+            # Check if the edge exists in the graph's adjacency matrix
+            exists = graph.get_edge(source_number, target_number) != False
+            results[(source, target)] = 'Exists' if exists else 'Does not exist'
+    return results
+
     
 def main():
-    # TODO: Put your analysis and plotting code here for 8(b)
-    question_8_section_b(save_visualization=True)
+    """
+    TEST TO CHECK HOW THE GRAPH TO CREATE THE GRAPH FROM THE TSV FILES
+    
+    ALON CHANGRE YOUR PATHSSSS HEREEEEE
+    """
+    subbredit_title_to_number_path = '/Users/arielchiskis/Documents/university/networks_and_markets_part_6/unique_subreddits_title.csv'
+    title_subreddit_graph_path = '/Users/arielchiskis/Documents/university/networks_and_markets_part_6/soc-redditHyperlinks-title.tsv'
+    subbredit_title_to_number_df = pd.read_csv(subbredit_title_to_number_path)
+
+    title_subreddit_graph = pd.read_csv(title_subreddit_graph_path,sep='\t')
+    subreddit_to_number = {subreddit: idx for idx, subreddit in enumerate(subbredit_title_to_number_df['Subreddit'])}
+
+    graph = create_graph_from_dataframe(df=title_subreddit_graph,subreddit_to_number=subreddit_to_number,weighted=False)
+
+    # Define the pairs of subreddits as given
+    subreddit_pairs = [
+        ('rddtgaming', 'rddtrust'),
+        ('xboxone', 'battlefield_4'),
+        ('ps4', 'battlefield_4'),
+        ('fitnesscirclejerk', 'leangains'),
+        ('fitnesscirclejerk', 'lifeprotips'),
+        ('cancer', 'fuckcancer'),
+        ('jleague', 'soccer'),
+        ('bestoftldr', 'tifu'),
+        ('battlefield_4','nfl') #doesnt exists
+    ]
+
+        # Perform the checks
+    edge_results = check_edge_existence(graph, subreddit_to_number, subreddit_pairs)
+
+    # Print the results
+    for pair, result in edge_results.items():
+        print(f"Edge from {pair[0]} to {pair[1]}: {result}")
+
+    
+
+
+    
+
 
     
 
