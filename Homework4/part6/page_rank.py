@@ -1,13 +1,15 @@
 import numpy as np
-import os
-import numpy as np
 from typing import Union
-import matplotlib.pyplot as plt
 import pandas as pd
+
+TITLE_DS_PATH = "soc-redditHyperlinks-body.tsv"
+BODY_DS_PATH = "soc-redditHyperlinks-title.tsv"
+SUBREDDIT_INDEXING_PATH = "subbreddit_indexing.csv"
+
 ##########################################################################################
 class DirectedGraph:
-    def __init__(self, number_of_nodes, wheighted: bool):
-        self.adj_matrix: np.ndarray = np.zeros((number_of_nodes, number_of_nodes), dtype=np.int32 if wheighted else np.bool)
+    def __init__(self, number_of_nodes, weighted : bool):
+        self.adj_matrix: np.ndarray = np.zeros((number_of_nodes, number_of_nodes), dtype=np.int32 if weighted  else np.bool)
     
     def add_edge(self, origin_node, destination_node, weight = True):
         '''Adds an edge from origin_node to destination_node.'''
@@ -77,69 +79,38 @@ def scaled_page_rank(G, num_iter, eps=1/7.0):
 
     return scores
 
-
-    #loading graphs in part 6
-######################################################################################
-def uniform_dataframe_vertically(df1,df2):
-    union = pd.concat([df1, df2], axis=0, ignore_index=True)
-    return union
-
-def create_graph_from_dataframe(df, subreddit_to_number, weighted=False):
-    '''
-    Convert subreddit names to numbers and create a graph based on a DataFrame.
+def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
+    body_df = pd.read_csv(body_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
+                          usecols = [0, 1], # Notice how I limited myself to certain columns, this make things much more efficient.
+                          delimiter="\t")
+    title_df = pd.read_csv(title_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
+                          usecols = [0, 1],
+                          delimiter="\t")
+    combined_df = pd.concat([body_df, title_df], axis=0, ignore_index=True)
+    title_df, body_df = None, None # I do this to free memory. 
     
-    Parameters:
-        df (pd.DataFrame): DataFrame with columns 'SOURCE_SUBREDDIT' and 'TARGET_SUBREDDIT'.
-        subreddit_to_number (dict): Mapping from subreddit names to numbers.
-        weighted (bool): If True, the graph will consider weights; otherwise, it will use binary connections.
+    indexing_df = pd.read_csv(indexing_path,
+                              usecols = [1])
+    indexing_df.
+    indexing = {subreddit: idx for idx, subreddit in enumerate(indexing_df[0])}
 
-    Returns:
-        DirectedGraph: The graph constructed from the DataFrame.
-    '''
-    # Convert subreddit names to numbers
+    indexing_df = None
+    combined_df['SOURCE_SUBREDDIT'] = combined_df['SOURCE_SUBREDDIT'].map(indexing)
+    combined_df['TARGET_SUBREDDIT'] = combined_df['TARGET_SUBREDDIT'].map(indexing)
 
-    df['source_number'] = df['SOURCE_SUBREDDIT'].map(subreddit_to_number)
-    df['target_number'] = df['TARGET_SUBREDDIT'].map(subreddit_to_number)
-   
-    # Initialize the graph
-    graph = DirectedGraph(len(subreddit_to_number), weighted)
+    weighted_graph = DirectedGraph(len(indexing), weighted  = True)
+    unweighted_graph = DirectedGraph(len(indexing), weighted = False)
 
-    # Add edges to the graph
-    if graph.adj_matrix.dtype == np.int32: #created weighted for how much time the edge (x,y) has apeeared in the file
-        edge_counts = df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']).size().reset_index(name='COUNT')
-        for _, row in edge_counts.iterrows():
-            graph.add_edge(row['source_number'], row['target_number'],weight=row['COUNT'])
-
-    else:
-        for _, row in df.iterrows():
-            graph.add_edge(row['source_number'], row['target_number'])
-
-
-    return graph
-
-
-def combined_body_title_graph(body_df,title_df,subreddit_to_number,weighted):
-    combined_df = uniform_dataframe_vertically(df1=body_df,df2=title_df)
-    graph = create_graph_from_dataframe(df = combined_df , subreddit_to_number=subreddit_to_number,weighted=weighted )
-    return graph
-
-
-
-def create_combined_graph(body_path,title_path,combined_unique_path,weighted):
-    body_df = pd.read_csv(body_path)
-    title_df = pd.read_csv(title_path)
-    comdined_subreddit_to_number_df = pd.read_csv(combined_unique_path)
-    comdined_subreddit_to_number  =  {subreddit: idx for idx, subreddit in enumerate(comdined_subreddit_to_number_df['Subreddit'])}
-    graph = combined_body_title_graph(body_df=body_df,title_df=title_df,subreddit_to_number=comdined_subreddit_to_number,weighted=weighted)
-    return graph   
+    for source_target, df in combined_df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']):
+        weighted_graph.add_edge(source_target[0], source_target[1], weight = df.shape()[0])
+        unweighted_graph.add_edge(source_target[0], source_target[1])
+    
+    return weighted_graph, unweighted_graph
 
 def main():
-    title_df_path = "put your title_df_path here"
-    body_df_path = "put you body_df_path_here"
-    combined_unique_subreddit_path = "networks_and_markets/Homework4/part6/unique_subreddits_combined_title_and_body.csv" #relative path king
-    weighted = True
-    graph = create_combined_graph(body_path=body_df_path,title_path=title_df_path,combined_unique_path=combined_unique_subreddit_path,weighted=weighted)
-    """continue from here alon ya king"""
-    pass
+    weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_path = SUBREDDIT_INDEXING_PATH)
+    """love you bro"""
+    print(weighted_graph)
+    print(unweighted_graph)
 if __name__ == "__main__":
     main()
