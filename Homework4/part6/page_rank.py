@@ -98,8 +98,7 @@ def create_graph_from_dataframe(df, subreddit_to_number, weighted=False):
     '''
     # Convert subreddit names to numbers
 
-    df['source_number'] = df['SOURCE_SUBREDDIT'].map(subreddit_to_number)
-    df['target_number'] = df['TARGET_SUBREDDIT'].map(subreddit_to_number)
+
    
     # Initialize the graph
     graph = DirectedGraph(len(subreddit_to_number), weighted)
@@ -107,10 +106,15 @@ def create_graph_from_dataframe(df, subreddit_to_number, weighted=False):
     # Add edges to the graph
     if graph.adj_matrix.dtype == np.int32: #created weighted for how much time the edge (x,y) has apeeared in the file
         edge_counts = df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']).size().reset_index(name='COUNT')
+        
+        edge_counts['source_number'] = df['SOURCE_SUBREDDIT'].map(subreddit_to_number)
+        edge_counts['target_number'] = df['TARGET_SUBREDDIT'].map(subreddit_to_number)
         for _, row in edge_counts.iterrows():
             graph.add_edge(row['source_number'], row['target_number'],weight=row['COUNT'])
 
     else:
+        df['source_number'] = df['SOURCE_SUBREDDIT'].map(subreddit_to_number)
+        df['target_number'] = df['TARGET_SUBREDDIT'].map(subreddit_to_number)
         for _, row in df.iterrows():
             graph.add_edge(row['source_number'], row['target_number'])
 
@@ -126,20 +130,21 @@ def combined_body_title_graph(body_df,title_df,subreddit_to_number,weighted):
 
 
 def create_combined_graph(body_path,title_path,combined_unique_path,weighted):
-    body_df = pd.read_csv(body_path)
-    title_df = pd.read_csv(title_path)
+    body_df = pd.read_csv(body_path,sep = "\t")
+    title_df = pd.read_csv(title_path,sep = "\t")
     comdined_subreddit_to_number_df = pd.read_csv(combined_unique_path)
     comdined_subreddit_to_number  =  {subreddit: idx for idx, subreddit in enumerate(comdined_subreddit_to_number_df['Subreddit'])}
     graph = combined_body_title_graph(body_df=body_df,title_df=title_df,subreddit_to_number=comdined_subreddit_to_number,weighted=weighted)
     return graph   
 
 def main():
-    title_df_path = "put your title_df_path here"
-    body_df_path = "put you body_df_path_here"
+    title_df_path = "/Users/arielchiskis/Downloads/soc-redditHyperlinks-title.tsv"
+    body_df_path = "/Users/arielchiskis/Downloads/soc-redditHyperlinks-body.tsv"
     combined_unique_subreddit_path = "networks_and_markets/Homework4/part6/unique_subreddits_combined_title_and_body.csv" #relative path king
     weighted = True
     graph = create_combined_graph(body_path=body_df_path,title_path=title_df_path,combined_unique_path=combined_unique_subreddit_path,weighted=weighted)
     """continue from here alon ya king"""
-    pass
+ 
+    print("finished")
 if __name__ == "__main__":
     main()
