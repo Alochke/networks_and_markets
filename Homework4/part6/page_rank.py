@@ -21,10 +21,7 @@ class DirectedGraph:
     def edges_from(self, origin_node):
         ''' Returns a one-dimentional np array of all the nodes destination_node such that there is
             a directed edge (origin_node, destination_node) in the graph.'''
-        if self.adj_matrix.dtype == np.int32:
-            return np.where(self.adj_matrix[origin_node] > 0)[0]
-        else:
-            return np.where(self.adj_matrix[origin_node] == True)[0]
+        return np.where(self.adj_matrix[origin_node] > 0)[0]
     
     def get_edge(self, origin_node, destination_node):
         ''' Returns the value on the edge forom origin_node to destination_node, will be false or 0 if there's no such edge.'''
@@ -62,21 +59,23 @@ def scaled_page_rank(G, num_iter, eps=1/7.0):
     if num_iter == 0:
         return scores
 
-    # Create a transposed graph to simplify the calculation of incoming edges
-    transposed_G = G.transpose()
-
     # Compute out-degrees for each node
-    out_degrees = np.array(sum(G.edges_from(node) for node in range(n)))
+    out_degrees = np.array([sum(G.adj_matrix[node]) for node in range(n)])
     
-    if G.adj_matrix.dtype == np.int32:
-        num_sinks = len(np.where(G.adj_matrix == 0)[0])
+    if G.adj_matrix.dtype != np.bool:
+        sinks = []
+        for i in range(n):
+            if len(G.edges_from(i)) == 0:
+                sinks += [i]
 
     # Iterative computation of PageRank scores using transposed graph
     for _ in range(num_iter):
-        new_scores = np.zeros((n), dtype = np.float32)
+        new_scores = np.zeros((n), dtype = np.float64)
+        if G.adj_matrix.dtype != np.bool:
+            sinks_score_sum = sum(scores[sinks])
         for v in range(n):
-            incoming_score = sum((scores[v0] * G.get_edge(v0, v)) / out_degrees[v0] for v0 in transposed_G.edges_from(v))
-            new_scores[v] = eps/n + (1 - eps) * (incoming_score + (0 if G.adj_matrix.dtype == np.bool else num_sinks * (1 / n)))
+            incoming_score = sum((scores[v0] * G.get_edge(v0, v)) / out_degrees[v0] for v0 in np.where(G.adj_matrix.T[v] > 0)[0])
+            new_scores[v] = eps/n + (1 - eps) * (incoming_score + (0 if G.adj_matrix.dtype == np.bool else sinks_score_sum * (1 / n)))
 
         scores = new_scores
 
@@ -113,5 +112,12 @@ def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
 
 def main():
     weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_path = SUBREDDIT_INDEXING_PATH)
+    influence_weighted = scaled_page_rank(weighted_graph, num_iter = 10)
+    influence_unweighted = scaled_page_rank(unweighted_graph, num_iter = 10)
+    print(influence_weighted)
+    print(sum(influence_weighted))
+    print(influence_unweighted)
+    print(sum(influence_unweighted))
+
 if __name__ == "__main__":
     main()
