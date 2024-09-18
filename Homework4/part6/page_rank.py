@@ -5,11 +5,14 @@ import pandas as pd
 TITLE_DS_PATH = "soc-redditHyperlinks-body.tsv"
 BODY_DS_PATH = "soc-redditHyperlinks-title.tsv"
 SUBREDDIT_INDEXING_PATH = "subbreddit_indexing.csv"
+SOURCE_SUBREDDIT = 0
+TARGET_SUBREDDIT = 1
+NUM_ROWS = 0
 
 ##########################################################################################
 class DirectedGraph:
     def __init__(self, number_of_nodes, weighted : bool):
-        self.adj_matrix: np.ndarray = np.zeros((number_of_nodes, number_of_nodes), dtype=np.int32 if weighted  else np.bool)
+        self.adj_matrix: np.ndarray = np.zeros((number_of_nodes, number_of_nodes), dtype=np.int16 if weighted  else np.bool)
     
     def add_edge(self, origin_node, destination_node, weight = True):
         '''Adds an edge from origin_node to destination_node.'''
@@ -85,16 +88,17 @@ def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
                           delimiter="\t")
     title_df = pd.read_csv(title_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
                           usecols = [0, 1],
-                          delimiter="\t")
+                          delimiter = "\t")
     combined_df = pd.concat([body_df, title_df], axis=0, ignore_index=True)
     title_df, body_df = None, None # I do this to free memory. 
     
     indexing_df = pd.read_csv(indexing_path,
                               usecols = [1])
-    indexing_df.
-    indexing = {subreddit: idx for idx, subreddit in enumerate(indexing_df[0])}
+                              
+    indexing = {subreddit: idx for idx, subreddit in indexing_df.itertuples(name = None)}
 
     indexing_df = None
+    
     combined_df['SOURCE_SUBREDDIT'] = combined_df['SOURCE_SUBREDDIT'].map(indexing)
     combined_df['TARGET_SUBREDDIT'] = combined_df['TARGET_SUBREDDIT'].map(indexing)
 
@@ -102,15 +106,12 @@ def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
     unweighted_graph = DirectedGraph(len(indexing), weighted = False)
 
     for source_target, df in combined_df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']):
-        weighted_graph.add_edge(source_target[0], source_target[1], weight = df.shape()[0])
-        unweighted_graph.add_edge(source_target[0], source_target[1])
+        weighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT], weight = df.shape[NUM_ROWS])
+        unweighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT])
     
     return weighted_graph, unweighted_graph
 
 def main():
     weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_path = SUBREDDIT_INDEXING_PATH)
-    """love you bro"""
-    print(weighted_graph)
-    print(unweighted_graph)
 if __name__ == "__main__":
     main()
