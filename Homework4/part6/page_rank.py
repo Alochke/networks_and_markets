@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Union
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 
 TITLE_DS_PATH = "soc-redditHyperlinks-body.tsv"
 BODY_DS_PATH = "soc-redditHyperlinks-title.tsv"
@@ -34,24 +36,20 @@ class DirectedGraph:
     def transpose(self):
         ''' Returns a new DirectedGraph that is the transpose of the current graph.'''
         return self.adj_matrix.T
-    
-
 
 
 
 ##########################################################################################
 
-def scaled_page_rank(G, num_iter, eps=1/7.0):
-    '''
-    This method, given a DirectedGraph G, runs the epsilon-scaled 
-    page-rank algorithm for num-iter iterations, for parameter eps,
-    and returns a Dictionary where the keys are the set of 
-    nodes [0,...,G.number_of_nodes() - 1], each associated with a value
-    equal to the score of output by the eps-scaled pagerank algorithm.
+def page_rank_plus(G: DirectedGraph, num_iter, eps=1/7.0):
+    """
+    Run the epsilon-scaled improved PageRank algorithm on a directed graph for a specified number of iterations..
 
-    In the case of num_iter=0, all nodes should 
-    have weight 1/G.number_of_nodes()
-    '''
+    Args:
+        G (DirectedGraph): A directed graph.
+        num_iter (int): Number of iterations for the PageRank computation. If 0, assigns equal weight to all nodes.
+        eps (float): Ensures that nodes are reachable evenif no incoming edges exist. Important for nice mathematical properties.
+    """
 
     n = G.number_of_nodes()
     scores = np.array([1/n for i in range(n)])
@@ -81,6 +79,31 @@ def scaled_page_rank(G, num_iter, eps=1/7.0):
 
     return scores
 
+def visualize_page_rank(scores: np.ndarray, title: str):
+    """
+    Visualizes the PageRank scores as a bar chart.
+    
+    Args:
+        scores (np.ndarray): A 1D array of PageRank scores, where each index represents a node.
+        title (str): Title for the chart.
+    """
+    n = len(scores)
+    nodes = np.arange(n)  # List of nodes from 0 to n-1
+
+    # Create a bar plot of PageRank scores
+    plt.figure(figsize=(10, 6))
+    plt.bar(nodes, scores, color='skyblue')
+    
+    plt.xlabel("Node")
+    plt.ylabel("PageRank Score")
+    plt.title(title)
+    plt.xticks(nodes)
+    
+    # Show the plot
+    plt.savefig(title)
+
+
+
 def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
     body_df = pd.read_csv(body_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
                           usecols = [0, 1], # Notice how I limited myself to certain columns, this make things much more efficient.
@@ -103,21 +126,29 @@ def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
 
     weighted_graph = DirectedGraph(len(indexing), weighted  = True)
     unweighted_graph = DirectedGraph(len(indexing), weighted = False)
+    printed = nx.DiGraph()
 
     for source_target, df in combined_df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']):
         weighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT], weight = df.shape[NUM_ROWS])
+        printed.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT], weight = df.shape[NUM_ROWS])
         unweighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT])
+
+    pos = nx.spring_layout(printed)  # Layout for the nodes
+    nx.draw(printed, pos, with_labels=True, node_color='lightblue', node_size=500, arrows=True)
+    nx.draw_networkx_edge_labels(printed, pos, edge_labels=weighted_graph)
+
+    plt.title("Directed Graph Visualization")
+    plt.savefig("Directed Graph Visualization")
     
     return weighted_graph, unweighted_graph
 
 def main():
     weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_path = SUBREDDIT_INDEXING_PATH)
-    influence_weighted = scaled_page_rank(weighted_graph, num_iter = 10)
-    influence_unweighted = scaled_page_rank(unweighted_graph, num_iter = 10)
-    print(influence_weighted)
-    print(sum(influence_weighted))
-    print(influence_unweighted)
-    print(sum(influence_unweighted))
+    influence_weighted = page_rank_plus(weighted_graph, num_iter = 10)
+    influence_unweighted = page_rank_plus(unweighted_graph, num_iter = 10)
+    visualize_page_rank(influence_weighted, title="PageRank plus Scores")
+    visualize_page_rank(influence_unweighted, title="PageRank Scores")
+    
 
 if __name__ == "__main__":
     main()
