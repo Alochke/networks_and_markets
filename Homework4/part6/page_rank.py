@@ -1,8 +1,10 @@
 import numpy as np
-from typing import Union
 import pandas as pd
-import networkx as nx
 import matplotlib.pyplot as plt
+import time
+from typing import Tuple
+import networkx as nx
+import os
 
 TITLE_DS_PATH = "soc-redditHyperlinks-body.tsv"
 BODY_DS_PATH = "soc-redditHyperlinks-title.tsv"
@@ -10,6 +12,8 @@ SUBREDDIT_INDEXING_PATH = "subbreddit_indexing.csv"
 SOURCE_SUBREDDIT = 0
 TARGET_SUBREDDIT = 1
 NUM_ROWS = 0
+
+GET_NAME = lambda indexing_df, i: indexing_df.iat[i, 0]
 
 ##########################################################################################
 class DirectedGraph:
@@ -36,6 +40,10 @@ class DirectedGraph:
     def transpose(self):
         ''' Returns a new DirectedGraph that is the transpose of the current graph.'''
         return self.adj_matrix.T
+    
+    def get_in_degree(self, node):
+        '''Return the in-degree of node.'''
+        return len(np.where(self.transpose()[node] > 0)[0])
 
 
 
@@ -79,43 +87,38 @@ def page_rank_plus(G: DirectedGraph, num_iter, eps=1/7.0):
 
     return scores
 
-def visualize_page_rank(scores: np.ndarray, title: str):
-    """
-    Visualizes the PageRank scores as a bar chart.
-    
-    Args:
-        scores (np.ndarray): A 1D array of PageRank scores, where each index represents a node.
-        title (str): Title for the chart.
-    """
-    n = len(scores)
-    nodes = np.arange(n)  # List of nodes from 0 to n-1
+def visualize_pagerank_results(pagerank_results, title):
+    # Create the directory for storing results if it doesn't exist
+    results_dir = "pagerank_results"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
 
-    # Create a bar plot of PageRank scores
-    plt.figure(figsize=(10, 6))
-    plt.bar(nodes, scores, color='skyblue')
-    
-    plt.xlabel("Node")
-    plt.ylabel("PageRank Score")
+    # Prepare data for plotting
+    nodes = [i for i in range(len(pagerank_results))]
+
+    # Create a bar plot
+    plt.figure(figsize=(10, 5))
+    plt.bar(nodes, pagerank_results, color='skyblue')
+        
+    plt.xlabel('Node')
+    plt.ylabel('Score')
     plt.title(title)
-    plt.xticks(nodes)
-    
-    # Show the plot
-    plt.savefig(title)
+    plt.ylim(0, max(pagerank_results) + 5)  # Ensure there is some space above the highest bar
+
+    # Save the plot to the designated folder
+    plt.savefig(f"{results_dir}/{title.replace(' ', '_')}.png")
+    plt.close()  # Close the figure context to free up memory
 
 
-
-def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
+def create_combined_graph(body_path: str, title_path: str, indexing_df: pd.DataFrame) -> Tuple[DirectedGraph, DirectedGraph]:
     body_df = pd.read_csv(body_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
-                          usecols = [0, 1], # Notice how I limited myself to certain columns, this make things much more efficient.
+                          usecols = [0, 1],
                           delimiter="\t")
     title_df = pd.read_csv(title_path, dtype = {"SOURCE_SUBREDDIT": str, "TARGET_SUBREDDIT": str},
                           usecols = [0, 1],
                           delimiter = "\t")
     combined_df = pd.concat([body_df, title_df], axis=0, ignore_index=True)
     title_df, body_df = None, None # I do this to free memory. 
-    
-    indexing_df = pd.read_csv(indexing_path,
-                              usecols = [1])
                               
     indexing = {subreddit: idx for idx, subreddit in indexing_df.itertuples(name = None)}
 
@@ -126,29 +129,54 @@ def create_combined_graph(body_path: str, title_path: str, indexing_path: str):
 
     weighted_graph = DirectedGraph(len(indexing), weighted  = True)
     unweighted_graph = DirectedGraph(len(indexing), weighted = False)
-    printed = nx.DiGraph()
 
     for source_target, df in combined_df.groupby(['SOURCE_SUBREDDIT', 'TARGET_SUBREDDIT']):
         weighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT], weight = df.shape[NUM_ROWS])
-        printed.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT], weight = df.shape[NUM_ROWS])
         unweighted_graph.add_edge(source_target[SOURCE_SUBREDDIT], source_target[TARGET_SUBREDDIT])
-
-    pos = nx.spring_layout(printed)  # Layout for the nodes
-    nx.draw(printed, pos, with_labels=True, node_color='lightblue', node_size=500, arrows=True)
-    nx.draw_networkx_edge_labels(printed, pos, edge_labels=weighted_graph)
-
-    plt.title("Directed Graph Visualization")
-    plt.savefig("Directed Graph Visualization")
     
     return weighted_graph, unweighted_graph
 
-def main():
-    weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_path = SUBREDDIT_INDEXING_PATH)
-    influence_weighted = page_rank_plus(weighted_graph, num_iter = 10)
-    influence_unweighted = page_rank_plus(unweighted_graph, num_iter = 10)
-    visualize_page_rank(influence_weighted, title="PageRank plus Scores")
-    visualize_page_rank(influence_unweighted, title="PageRank Scores")
+def run_alg_and_analyse(graph: DirectedGraph, analysed: str) -> np.ndarray:
+    ANALYSIS_STRING = lambda x, t0, t1: f"Average infulence: {np.average(x)}\nStandard deviation: {np.std(x)}\nMinimal Influence: {min(x)}\nMaximal influence: {max(x)}\nSum of Influences: {sum(x)}\nRuntime: {t1 - t0} seconds\n"
     
+    t0 = time.monotonic()
+    influence_weighted = page_rank_plus(graph, num_iter = 10)
+    t1 = time.monotonic()
+    
+    print(f"Analysis of {analysed} algorithm\n")
+    print(ANALYSIS_STRING(influence_weighted, t0, t1))
+    
+    return influence_weighted
+
+def main():
+    indexing_df = pd.read_csv(SUBREDDIT_INDEXING_PATH,
+                              usecols = [1])
+    weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_df = indexing_df)
+    
+    print(f"Average in degree: {np.average(np.array([weighted_graph.get_in_degree(i) for i in range(weighted_graph.number_of_nodes())]))}\n")
+
+    influence_unweighted = run_alg_and_analyse(unweighted_graph, "regular")
+    influence_weighted = run_alg_and_analyse(weighted_graph, "improved")
+    normalized_weighted = influence_weighted / max(influence_weighted)
+    normalized_unweighted = influence_unweighted / max(influence_unweighted)
+    visualize_pagerank_results(influence_unweighted, "PageRank Results")
+    visualize_pagerank_results(influence_weighted, "Improved PageRank Results")
+
+    abs_diff = np.abs(normalized_weighted - normalized_unweighted)
+    biggest_diffrence = [pair[0] for pair in sorted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
+
+    print(f"10 Nodes With Biggest Diffrence Between Their Normalized PageRank Score And Normalized Improved PageRank Score: {(GET_NAME(indexing_df, i) for i in biggest_diffrence)}")
+    print(f"Their in-degrees, respectively: {(weighted_graph.get_in_degree(i) for i in biggest_diffrence)}")
+    print(f"Their normalized PageRank scores, respectively: {(normalized_unweighted[i] for i in biggest_diffrence)}")
+    print(f"Their normalized Improved PageRank scores, respectively: {(normalized_weighted[i] for i in biggest_diffrence)}\n")
+
+    highest_influence_unweighted = [pair[0] for pair in normalized_unweighted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
+    print(f"10 Nodes With Highest normal PageRank result: {(GET_NAME(indexing_df, i) for i in highest_influence_unweighted)}")
+    print(f"Their normalized normal PageRank scores, respectively: {(normalized_unweighted[i] for i in highest_influence_unweighted)}")
+
+    highest_influence_unweighted = [pair[0] for pair in normalized_weighted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
+    print(f"10 Nodes With Highest improved PageRank result: {(GET_NAME(indexing_df, i) for i in highest_influence_unweighted)}")
+    print(f"Their normalized improved PageRank scores, respectively: {(normalized_unweighted[i] for i in highest_influence_unweighted)}")
 
 if __name__ == "__main__":
     main()
