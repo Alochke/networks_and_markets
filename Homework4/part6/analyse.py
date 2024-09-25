@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import time
 from typing import Tuple
-import networkx as nx
 import os
 
 TITLE_DS_PATH = "soc-redditHyperlinks-body.tsv"
