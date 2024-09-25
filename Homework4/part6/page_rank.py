@@ -103,7 +103,6 @@ def visualize_pagerank_results(pagerank_results, title):
     plt.xlabel('Node')
     plt.ylabel('Score')
     plt.title(title)
-    plt.ylim(0, max(pagerank_results) + 5)  # Ensure there is some space above the highest bar
 
     # Save the plot to the designated folder
     plt.savefig(f"{results_dir}/{title.replace(' ', '_')}.png")
@@ -137,7 +136,7 @@ def create_combined_graph(body_path: str, title_path: str, indexing_df: pd.DataF
     return weighted_graph, unweighted_graph
 
 def run_alg_and_analyse(graph: DirectedGraph, analysed: str) -> np.ndarray:
-    ANALYSIS_STRING = lambda x, t0, t1: f"Average infulence: {np.average(x)}\nStandard deviation: {np.std(x)}\nMinimal Influence: {min(x)}\nMaximal influence: {max(x)}\nSum of Influences: {sum(x)}\nRuntime: {t1 - t0} seconds\n"
+    ANALYSIS_STRING = lambda x, t0, t1: f"Average infulence: {np.average(x)}\nStandard deviation: {np.std(x)}\nMinimal Influence: {min(x)}\nMaximal influence: {max(x)}\nSum of influences: {sum(x)}\nRuntime: {t1 - t0} seconds\n"
     
     t0 = time.monotonic()
     influence_weighted = page_rank_plus(graph, num_iter = 10)
@@ -153,30 +152,31 @@ def main():
                               usecols = [1])
     weighted_graph, unweighted_graph = create_combined_graph(body_path = BODY_DS_PATH ,title_path = BODY_DS_PATH, indexing_df = indexing_df)
     
-    print(f"Average in degree: {np.average(np.array([weighted_graph.get_in_degree(i) for i in range(weighted_graph.number_of_nodes())]))}\n")
+    print(f"Average in degree: {np.average(np.array([weighted_graph.get_in_degree(i) for i in range(weighted_graph.number_of_nodes())]))}")
+    print(f"Number of sinks: {len([i for i in range(unweighted_graph.number_of_nodes()) if len(unweighted_graph.edges_from(i))])}\n")
 
     influence_unweighted = run_alg_and_analyse(unweighted_graph, "regular")
     influence_weighted = run_alg_and_analyse(weighted_graph, "improved")
     normalized_weighted = influence_weighted / max(influence_weighted)
     normalized_unweighted = influence_unweighted / max(influence_unweighted)
-    visualize_pagerank_results(influence_unweighted, "PageRank Results")
+    visualize_pagerank_results(influence_unweighted, "Scaled PageRank Results")
     visualize_pagerank_results(influence_weighted, "Improved PageRank Results")
 
     abs_diff = np.abs(normalized_weighted - normalized_unweighted)
     biggest_diffrence = [pair[0] for pair in sorted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
 
-    print(f"10 Nodes With Biggest Diffrence Between Their Normalized PageRank Score And Normalized Improved PageRank Score: {(GET_NAME(indexing_df, i) for i in biggest_diffrence)}")
-    print(f"Their in-degrees, respectively: {(weighted_graph.get_in_degree(i) for i in biggest_diffrence)}")
-    print(f"Their normalized PageRank scores, respectively: {(normalized_unweighted[i] for i in biggest_diffrence)}")
-    print(f"Their normalized Improved PageRank scores, respectively: {(normalized_weighted[i] for i in biggest_diffrence)}\n")
+    print(f"10 nodes with biggest diffrence between their normalized pageRank score and normalized improved PageRank score: {[GET_NAME(indexing_df, i) for i in biggest_diffrence]}")
+    print(f"Their in-degrees, respectively: {[weighted_graph.get_in_degree(i) for i in biggest_diffrence]}")
+    print(f"Their normalized PageRank scores, respectively: {[normalized_unweighted[i] for i in biggest_diffrence]}")
+    print(f"Their normalized Improved PageRank scores, respectively: {[normalized_weighted[i] for i in biggest_diffrence]}\n")
 
-    highest_influence_unweighted = [pair[0] for pair in normalized_unweighted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
-    print(f"10 Nodes With Highest normal PageRank result: {(GET_NAME(indexing_df, i) for i in highest_influence_unweighted)}")
-    print(f"Their normalized normal PageRank scores, respectively: {(normalized_unweighted[i] for i in highest_influence_unweighted)}")
+    highest_influence_unweighted = [pair[0] for pair in sorted([[i, normalized_unweighted[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
+    print(f"10 nodes with highest normal PageRank result: {[GET_NAME(indexing_df, i) for i in highest_influence_unweighted]}")
+    print(f"Their normalized normal PageRank scores, respectively: {[normalized_unweighted[i] for i in highest_influence_unweighted]}\n")
 
-    highest_influence_unweighted = [pair[0] for pair in normalized_weighted([[i, abs_diff[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
-    print(f"10 Nodes With Highest improved PageRank result: {(GET_NAME(indexing_df, i) for i in highest_influence_unweighted)}")
-    print(f"Their normalized improved PageRank scores, respectively: {(normalized_unweighted[i] for i in highest_influence_unweighted)}")
+    highest_influence_unweighted = [pair[0] for pair in sorted([[i, normalized_weighted[i]] for i in range(len(abs_diff))], key = lambda x: x[1], reverse = True)][:10]
+    print(f"10 Nodes with highest improved PageRank result: {[GET_NAME(indexing_df, i) for i in highest_influence_unweighted]}")
+    print(f"Their normalized improved PageRank scores, respectively: {[normalized_unweighted[i] for i in highest_influence_unweighted]}")
 
 if __name__ == "__main__":
     main()
